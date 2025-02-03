@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { NumberInput, PaxInput } from '../../companies/SettingFormComponents';
 
-const GuideSettingsModal = ({ show, onHide, guide }) => {
+const GuideSettingsModal = ({ show, onHide, guide, onSave }) => {
   const [settings, setSettings] = useState({
     earnings: guide.earnings || '',
-    promotionRate: guide.commission || '',
+    promotionRate: guide.promotionRate || '',
     revenue: guide.revenue || '',
     pax: {
       adult: guide.pax?.adult || '',
@@ -15,10 +15,16 @@ const GuideSettingsModal = ({ show, onHide, guide }) => {
 
   useEffect(() => {
     if (show) {
-      setSettings(prev => ({
-        ...prev,
-        promotionRate: guide.commission || '',
-      }));
+      setSettings({
+        earnings: guide.earnings || '',
+        promotionRate: guide.promotionRate || '',
+        revenue: guide.revenue || '',
+        pax: {
+          adult: guide.pax?.adult || '',
+          child: guide.pax?.child || '',
+          free: guide.pax?.free || ''
+        }
+      });
     }
   }, [show, guide]);
 
@@ -43,7 +49,19 @@ const GuideSettingsModal = ({ show, onHide, guide }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // TODO: Kaydetme işlemi
+    const formattedSettings = {
+      earnings: parseFloat(settings.earnings) || 0,
+      promotionRate: parseFloat(settings.promotionRate) || 0,
+      revenue: parseFloat(settings.revenue) || 0,
+      pax: {
+        adult: parseInt(settings.pax.adult) || 0,
+        child: parseInt(settings.pax.child) || 0,
+        free: parseInt(settings.pax.free) || 0
+      }
+    };
+    
+    console.log('Kaydedilen ayarlar:', formattedSettings);
+    onSave(formattedSettings);
     onHide();
   };
 
@@ -82,7 +100,6 @@ const GuideSettingsModal = ({ show, onHide, guide }) => {
                     min="0"
                     max="100"
                     suffix="%"
-                    readOnly
                   />
                 </div>
 
@@ -124,7 +141,6 @@ const GuideSettingsModal = ({ show, onHide, guide }) => {
                     onChange={handleChange}
                   />
                   <PaxInput
-                    readOnly="readOnly"
                     label="Free"
                     name="pax.free"
                     value={settings.pax.free}
@@ -133,18 +149,7 @@ const GuideSettingsModal = ({ show, onHide, guide }) => {
                 </div>
               </div>
 
-              <div className="row">
-                <div className="col-md-6 p-4">
-                  <h6 className="mb-3">Toplam PAX</h6>
-                  <div className="row">
-                    <ul className="list-unstyled d-flex justify-content-between">
-                      <li>Yetişkin: </li>
-                      <li>Çocuk: </li>
-                      <li>Free: </li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
+          
 
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={onHide}>

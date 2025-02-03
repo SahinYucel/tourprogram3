@@ -1,7 +1,9 @@
 import axios from 'axios';
 
 // Production API URL
-const API_URL = 'http://localhost:5000';
+//const API_URL = 'http://localhost:5000';
+const API_URL = 'http://13.216.32.130:5000';
+
 
 const api = axios.create({
     baseURL: API_URL,
@@ -42,8 +44,6 @@ export const updateRolePermissions = (companyId, permissions) => api.put(`/agenc
 export const saveTourData = (companyId, data) => api.post('/tourlist/save', { companyId, ...data });
 export const getTourData = async (companyId) => {
   try {
-    console.log('Fetching tour data for companyId:', companyId); // Debug log
-    console.log('API URL:', `${API_URL}/tourlist/${companyId}`); // Debug log
 
     const response = await api.get(`/tourlist/${companyId}`, {
       headers: {
@@ -53,7 +53,6 @@ export const getTourData = async (companyId) => {
       }
     });
 
-    console.log('API Response:', response); // Debug log
     return response.data;
   } catch (error) {
     console.error('getTourData detailed error:', {
@@ -123,5 +122,62 @@ export const deleteTour = async (tourId) => {
 
 // Currency endpoints
 export const getCurrencyRates = () => api.get('/currency');
+
+export const saveProviderData = async (providerId, data) => {return await api.post(`/provider-data/${providerId}`, data);};
+
+export const getProviderData = async (providerId) => {return await api.get(`/provider-data/${providerId}`);};
+
+// Guide endpoints
+export const saveGuides = async (companyId, guides) => {
+  const response = await api.post('/guide-data/save', {
+    companyId,
+    guides: guides.map(guide => ({
+      ...guide,
+      earnings: parseFloat(guide.earnings) || 0,
+      promotionRate: parseFloat(guide.promotionRate) || 0,
+      revenue: parseFloat(guide.revenue) || 0,
+      pax: {
+        adult: parseInt(guide.pax?.adult) || 0,
+        child: parseInt(guide.pax?.child) || 0,
+        free: parseInt(guide.pax?.free) || 0
+      }
+    }))
+  });
+  return response.data;
+};
+
+export const getGuides = async (companyId) => {  const response = await api.get(`/guide-data/${companyId}`);  return response.data;
+};
+
+export const deleteGuide = async (guideId) => {  const response = await api.delete(`/guide-data/${guideId}`);  return response.data;
+};
+
+// Safe endpoints
+export const getSafes = async (companyId) => {
+  try {
+    const response = await api.get(`/safe-data/${companyId}`);
+    return response.data;
+  } catch (error) {
+    throw new Error('Kasalar getirilemedi: ' + error.message);
+  }
+};
+
+export const saveSafe = async (companyId, safe) => {
+  try {
+    const response = await api.post('/safe-data/save', { companyId, safe });
+    return response.data;
+  } catch (error) {
+    throw new Error('Kasa kaydedilemedi: ' + error.message);
+  }
+};
+
+export const deleteSafe = async (safeId) => {
+  try {
+    const response = await api.delete(`/safe-data/${safeId}`);
+    return response.data;
+  } catch (error) {
+    throw new Error('Kasa silinemedi: ' + error.message);
+  }
+};
 
 export default api;

@@ -1,67 +1,49 @@
-import React, { useState } from 'react';
-import GuideSettingsModal from '../GuideSettingsModal';
+import React from 'react';
 
-const GuideTableRow = ({ guide, onEdit, onDelete, onSettingsSave }) => {
-  const [showSettings, setShowSettings] = useState(false);
-
-  const handleSettingsSave = (settings) => {
-    onSettingsSave(guide.id, settings);
-    setShowSettings(false);
-  };
-
+const GuideTableRow = ({ guide, onEdit, onDelete, onSettingsClick }) => {
   return (
-    <>
-      <tr>
-        <td>{guide.code}</td>
-        <td>{guide.name}</td>
-        <td>{guide.surname}</td>
-        <td>{guide.nickname}</td>
-        <td>{guide.phone}</td>
-        <td>
-          {Array.isArray(guide.region) ? 
-            guide.region.join(', ') || '-' : 
-            guide.region || '-'}
-        </td>
-        <td>{guide.guideGroup || '-'}</td>
-        <td>{guide.commission}%</td>
-        <td>{guide.languagesDisplay}</td>
-        <td>
-          <span className={`badge ${guide.isActive ? 'bg-success' : 'bg-danger'}`}>
-            {guide.isActive ? 'Aktif' : 'Pasif'}
-          </span>
-        </td>
-        <td>
-          <div className="d-flex gap-2">
-            <button
-              className="btn btn-primary btn-sm"
-              onClick={() => onEdit(guide)}
-            >
-              Düzenle
-            </button>
-            <button
-              className="btn btn-danger btn-sm"
-              onClick={() => onDelete(guide.id)}
-            >
-              Sil
-            </button>
-            <button 
-              className="btn btn-secondary btn-sm"
-              onClick={() => setShowSettings(true)}
-              title="Rehber Ayarları"
-            >
-              <i className="bi bi-gear-fill"></i>
-            </button>
-          </div>
-        </td>
-      </tr>
-
-      <GuideSettingsModal 
-        show={showSettings}
-        onHide={() => setShowSettings(false)}
-        guide={guide}
-        onSave={handleSettingsSave}
-      />
-    </>
+    <tr>
+      <td>{guide.code}</td>
+      <td>{guide.name}</td>
+      <td>{guide.surname}</td>
+      <td>{Array.isArray(guide.region) ? guide.region.join(', ') : guide.region}</td>
+      <td>{guide.guideGroup}</td>
+      <td>{guide.phone}</td>
+      <td>
+        {Object.entries(guide.languages || {})
+          .filter(([_, isSelected]) => isSelected)
+          .map(([lang]) => lang)
+          .join(', ')}
+        {guide.otherLanguages && `, ${guide.otherLanguages}`}
+      </td>
+      <td>
+        <span className={`badge ${guide.isActive ? 'bg-success' : 'bg-danger'}`}>
+          {guide.isActive ? 'Aktif' : 'Pasif'}
+        </span>
+      </td>
+      <td>
+        <div className="btn-group">
+          <button
+            className="btn btn-sm btn-outline-primary"
+            onClick={() => onEdit(guide)}
+          >
+            <i className="bi bi-pencil"></i>
+          </button>
+          <button
+            className="btn btn-sm btn-outline-danger"
+            onClick={() => onDelete(guide.id)}
+          >
+            <i className="bi bi-trash"></i>
+          </button>
+          <button
+            className="btn btn-sm btn-outline-secondary"
+            onClick={() => onSettingsClick(guide)}
+          >
+            <i className="bi bi-gear"></i>
+          </button>
+        </div>
+      </td>
+    </tr>
   );
 };
 

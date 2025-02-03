@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import CompanySettingsModal from './CompanySettingsModal'
 
-const CompanyTable = ({ companies, editingId, onEdit, onSave, onDelete, onInputChange, onSettingsSave }) => {
+const CompanyTable = ({ companies, editingId, onEdit, onSave, onDelete, onInputChange, onSettingsSave, providerSettings }) => {
   const [selectedCompany, setSelectedCompany] = useState(null)
 
   const handleSettingsClick = (company) => {
@@ -118,6 +118,7 @@ const CompanyTable = ({ companies, editingId, onEdit, onSave, onDelete, onInputC
           company={selectedCompany}
           onClose={handleCloseModal}
           onSave={handleSaveSettings}
+          initialSettings={providerSettings[selectedCompany.alphanumericId]}
         />
       )}
     </>

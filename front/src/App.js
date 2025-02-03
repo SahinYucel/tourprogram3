@@ -8,6 +8,7 @@ import Dashboard from './components/companyCreate/Dashboard';
 import CompanyManagement from './components/companyCreate/CompanyManagement';
 import CompanyLogin from './components/CompanyLogin';
 import CompanyAgencySlider from './components/companyCreate/agency/CompanyAgencySlider';
+import GuideDashboard from './components/GuideDashboard';
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
           <Route path="/company-management" element={<CompanyManagement />} />
           <Route path="/company-login" element={<CompanyLogin />} />
           <Route path="/companyAgencyDashboard/*" element={<CompanyAgencySlider />} />
+          <Route path="/guide-dashboard/*" element={<GuideDashboard />} />
         </Routes>
       </div>
     </Router>

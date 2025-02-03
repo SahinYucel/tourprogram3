@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getTourData } from '../../../../services/api';
+import { getTourData, saveGuides, getGuides } from '../../../../services/api';
 import GuideForm from './components/GuideForm';
 import GuideTable from './components/GuideTable';
 
@@ -27,7 +27,6 @@ export default function Guides() {
     isActive: true,
     region: [],
     guideGroup: '',
-    commission: '40',
     nickname: 'Guide',
     languages: defaultLanguages,
     otherLanguages: '',
@@ -70,17 +69,24 @@ export default function Guides() {
   }, []);
 
   useEffect(() => {
-    if (!companyId) return;
-
-    const savedGuides = localStorage.getItem(`guides_${companyId}`);
-    if (savedGuides) {
+    const loadGuides = async () => {
+      if (!companyId) return;
+      
       try {
-        const parsedGuides = JSON.parse(savedGuides);
-        setGuides(parsedGuides);
+        const loadedGuides = await getGuides(companyId);
+        console.log('Yüklenen rehberler:', loadedGuides);
+        if (Array.isArray(loadedGuides)) {
+          setGuides(loadedGuides);
+        } else {
+          console.error('Geçersiz rehber verisi:', loadedGuides);
+        }
       } catch (error) {
         console.error('Rehberler yüklenirken hata:', error);
+        alert('Rehberler yüklenirken bir hata oluştu');
       }
-    }
+    };
+
+    loadGuides();
   }, [companyId]);
 
   useEffect(() => {
@@ -182,17 +188,47 @@ export default function Guides() {
   };
 
   const handleSettingsSave = (guideId, settings) => {
+    console.log('Guides - ayarlar kaydediliyor:', { guideId, settings });
     setGuides(prev => prev.map(guide => 
       guide.id === guideId 
         ? { 
             ...guide, 
-            earnings: settings.earnings,
-            promotionRate: settings.promotionRate,
-            revenue: settings.revenue,
-            pax: settings.pax
+            earnings: parseFloat(settings.earnings) || 0,
+            promotionRate: parseFloat(settings.promotionRate) || 0,
+            revenue: parseFloat(settings.revenue) || 0,
+            pax: {
+              adult: parseInt(settings.pax?.adult) || 0,
+              child: parseInt(settings.pax?.child) || 0,
+              free: parseInt(settings.pax?.free) || 0
+            }
           }
         : guide
     ));
+  };
+
+  const handleSaveToDatabase = async () => {
+    try {
+      console.log('Veritabanına kaydedilecek rehberler:', guides);
+      
+      // Rehberleri ve ayarlarını birlikte gönder
+      const guidesWithSettings = guides.map(guide => ({
+        ...guide,
+        earnings: parseFloat(guide.earnings) || 0,
+        promotionRate: parseFloat(guide.promotionRate) || 0,
+        revenue: parseFloat(guide.revenue) || 0,
+        pax: {
+          adult: parseInt(guide.pax?.adult) || 0,
+          child: parseInt(guide.pax?.child) || 0,
+          free: parseInt(guide.pax?.free) || 0
+        }
+      }));
+
+      await saveGuides(companyId, guidesWithSettings);
+      alert('Rehberler başarıyla kaydedildi');
+    } catch (error) {
+      console.error('Veri tabanına kaydedilirken hata:', error);
+      alert('Veri tabanına kaydedilirken bir hata oluştu: ' + error.message);
+    }
   };
 
   return (
@@ -218,6 +254,15 @@ export default function Guides() {
             onDelete={(id) => setGuides(prev => prev.filter(g => g.id !== id))}
             onSettingsSave={handleSettingsSave}
           />
+
+          <div className="text-center mt-4 mb-5">
+            <button 
+              className="btn btn-primary"
+              onClick={handleSaveToDatabase}
+            >
+              Veri Tabanına Kaydet
+            </button>
+          </div>
         </div>
       </div>
     </div>

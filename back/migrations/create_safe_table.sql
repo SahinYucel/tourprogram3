@@ -1,0 +1,13 @@
+CREATE TABLE IF NOT EXISTS safe (
+  id INT NOT NULL AUTO_INCREMENT,
+  company_id INT NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  type ENUM('cash', 'pos') NOT NULL,
+  pos_commission_rate DECIMAL(5,2),
+  balance DECIMAL(10,2) DEFAULT 0.00,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_company (company_id),
+  FOREIGN KEY (company_id) REFERENCES companyusers(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 

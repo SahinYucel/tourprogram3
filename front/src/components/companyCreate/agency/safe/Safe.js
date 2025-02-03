@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Currency from './Currency';
+import { getSafes, saveSafe, deleteSafe } from '../../../../services/api';
 
 export default function Safe() {
   const [safes, setSafes] = useState([]);
@@ -13,6 +14,7 @@ export default function Safe() {
   });
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState(null);
+  const [companyId, setCompanyId] = useState(null);
 
   const formatDate = (date) => {
     return new Date(date).toLocaleString('tr-TR', {
@@ -41,27 +43,22 @@ export default function Safe() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (editingId) {
-        // Edit existing safe
-        setSafes(prevSafes => 
-          prevSafes.map(safe => 
-            safe.id === editingId ? { ...safe, ...formData } : safe
-          )
-        );
-      } else {
-        // Add new safe
-        const newSafe = {
-          id: Date.now(), // Temporary ID for mock data
-          ...formData,
-          created_at: new Date().toISOString() // Yeni kasa için oluşturma tarihi
-        };
-        setSafes(prevSafes => [...prevSafes, newSafe]);
-      }
+      await saveSafe(companyId, {
+        id: editingId,
+        ...formData
+      });
+
+      // Kasaları yeniden yükle
+      const loadedSafes = await getSafes(companyId);
+      setSafes(loadedSafes);
+
+      // Formu temizle
       setFormData({ name: '', type: '', pos_commission_rate: '', balance: '0', created_at: '' });
       setEditingId(null);
+
     } catch (err) {
       setError('Kasa kaydedilirken bir hata oluştu');
       console.error('Error saving safe:', err);
@@ -79,16 +76,42 @@ export default function Safe() {
     setEditingId(safe.id);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm('Bu kasayı silmek istediğinizden emin misiniz?')) {
       try {
-        setSafes(prevSafes => prevSafes.filter(safe => safe.id !== id));
+        await deleteSafe(id);
+        setSafes(prev => prev.filter(safe => safe.id !== id));
       } catch (err) {
         setError('Kasa silinirken bir hata oluştu');
         console.error('Error deleting safe:', err);
       }
     }
   };
+
+  // CompanyId'yi localStorage'dan al
+  useEffect(() => {
+    const agencyUser = JSON.parse(localStorage.getItem('agencyUser'));
+    if (agencyUser?.companyId) {
+      setCompanyId(agencyUser.companyId);
+    }
+  }, []);
+
+  // Kasaları yükle
+  useEffect(() => {
+    const loadSafes = async () => {
+      if (!companyId) return;
+      
+      try {
+        const loadedSafes = await getSafes(companyId);
+        setSafes(loadedSafes);
+      } catch (error) {
+        setError('Kasalar yüklenirken bir hata oluştu');
+        console.error('Error loading safes:', error);
+      }
+    };
+
+    loadSafes();
+  }, [companyId]);
 
   return (
     <div className="container mt-4">
@@ -123,13 +146,14 @@ export default function Safe() {
                   <label htmlFor="name" className="form-label">Kasa İsmi</label>
                   <input 
                     type="text"
-                    className="form-control text-uppercase"
+                    className="form-control"
                     id="name"
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
                     placeholder="Kasa ismini giriniz"
                     required
+                    
                   />
                 </div>
               </div>
@@ -192,7 +216,7 @@ export default function Safe() {
                   type="submit" 
                   className={`btn ${editingId ? 'btn-success' : 'btn-primary'} w-100`}
                 >
-                  {editingId ? 'Güncelle' : 'Ekle'}
+                  {editingId ? 'Güncelle' : 'OLUŞTUR'}
                 </button>
               </div>
             </div>

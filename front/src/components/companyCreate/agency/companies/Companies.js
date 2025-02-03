@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import 'bootstrap/dist/css/bootstrap.min.css'
-import { saveProviders, getProviders } from '../../../../services/api'
+import { saveProviders, getProviders, saveProviderData, getProviderData } from '../../../../services/api'
 import CompanyForm from './CompanyForm'
 import CompanyTable from './CompanyTable'
 import { generateAlphanumericId, formatPhoneNumber, capitalizeCompanyName } from './companyUtils'
@@ -12,13 +12,33 @@ export default function Companies() {
     return savedCompanies ? JSON.parse(savedCompanies) : []
   })
   const [editingId, setEditingId] = useState(null)
+  const [providerSettings, setProviderSettings] = useState({});
+
+  const loadProviderData = async (providerId) => {
+    try {
+      const response = await getProviderData(providerId);
+      if (response.data) {
+        setCompanies(prev => prev.map(company => 
+          company.alphanumericId === providerId 
+            ? { 
+                ...company, 
+                ...response.data,
+                pax: response.data.pax || { adult: '', child: '', free: '' }
+              }
+            : company
+        ));
+      }
+    } catch (error) {
+      console.error('Provider data yüklenirken hata:', error);
+    }
+  };
 
   const loadProviders = async () => {
     try {
-      const agencyUser = JSON.parse(localStorage.getItem('agencyUser'))
-      if (!agencyUser?.companyId) return
+      const agencyUser = JSON.parse(localStorage.getItem('agencyUser'));
+      if (!agencyUser?.companyId) return;
 
-      const response = await getProviders(agencyUser.companyId)
+      const response = await getProviders(agencyUser.companyId);
       if (response.data && Array.isArray(response.data)) {
         const formattedProviders = response.data.map(provider => ({
           id: Date.now() + Math.random(),
@@ -26,14 +46,20 @@ export default function Companies() {
           companyName: provider.company_name,
           phoneNumber: provider.phone_number,
           status: provider.status === 1
-        }))
-        setCompanies(formattedProviders)
-        localStorage.setItem('companies', JSON.stringify(formattedProviders))
+        }));
+        
+        setCompanies(formattedProviders);
+        localStorage.setItem('companies', JSON.stringify(formattedProviders));
+        
+        // Her provider için ayarları yükle
+        for (const provider of formattedProviders) {
+          await loadProviderData(provider.alphanumericId);
+        }
       }
     } catch (error) {
-      console.error('Providers yüklenirken hata:', error)
+      console.error('Providers yüklenirken hata:', error);
     }
-  }
+  };
 
   useEffect(() => {
     loadProviders()
@@ -42,6 +68,28 @@ export default function Companies() {
   useEffect(() => {
     localStorage.setItem('companies', JSON.stringify(companies))
   }, [companies])
+
+  // Provider ayarlarını yükle
+  const loadProviderSettings = async (providerId) => {
+    try {
+      const response = await getProviderData(providerId);
+      if (response.data) {
+        setProviderSettings(prev => ({
+          ...prev,
+          [providerId]: response.data
+        }));
+      }
+    } catch (error) {
+      console.error('Provider settings yüklenirken hata:', error);
+    }
+  };
+
+  // Tüm provider'ların ayarlarını yükle
+  useEffect(() => {
+    companies.forEach(company => {
+      loadProviderSettings(company.alphanumericId);
+    });
+  }, [companies]);
 
   const handleInputChange = (e, id = null) => {
     const { name, value, id: inputId } = e.target
@@ -109,6 +157,7 @@ export default function Companies() {
     }
 
     try {
+      // Şirketleri kaydet
       const providersData = companies.map(company => ({
         alphanumericId: company.alphanumericId,
         companyName: company.companyName,
@@ -117,31 +166,55 @@ export default function Companies() {
         status: company.status ? 1 : 0
       }))
 
+      // Önce providers'ı kaydet
       const response = await saveProviders(companies.length ? providersData : [])
-      if (response.data.success) {
-        alert(companies.length ? 'Şirketler veri tabanında başarıyla güncellendi!' : 'Tüm şirketler veri tabanından başarıyla silindi!')
+      
+      // Sonra her bir provider'ın ayarlarını kaydet
+      if (response.data.success && companies.length) {
+        for (const company of companies) {
+          const settings = providerSettings[company.alphanumericId];
+          if (settings) {
+            await saveProviderData(company.alphanumericId, settings);
+          }
+        }
+        alert('Şirketler ve ayarlar veri tabanında başarıyla güncellendi!');
+      } else if (response.data.success) {
+        alert('Tüm şirketler veri tabanından başarıyla silindi!');
       } else {
-        alert('Hata: ' + (response.data.error || 'Bilinmeyen bir hata oluştu'))
+        alert('Hata: ' + (response.data.error || 'Bilinmeyen bir hata oluştu'));
       }
     } catch (error) {
       console.error('API Error:', error)
-      alert('Bir veri girip öyle deneyiniz.');
+      alert('Bir hata oluştu. Lütfen tekrar deneyiniz.');
     }
-  }
+  };
 
-  const handleSettingsSave = (companyId, settings) => {
-    setCompanies(prev => prev.map(company => 
-      company.id === companyId 
-        ? { 
-            ...company, 
-            earnings: settings.earnings,
-            promotionRate: settings.promotionRate,
-            revenue: settings.revenue,
-            pax: settings.pax
-          }
-        : company
-    ))
-  }
+  // Provider ayarlarını güncelle
+  const handleSettingsSave = async (companyId, settings) => {
+    const company = companies.find(c => c.id === companyId);
+    if (!company) return;
+
+    // Local state'i güncelle
+    setProviderSettings(prev => {
+      const newSettings = {
+        ...prev,
+        [company.alphanumericId]: settings
+      };
+      
+      // LocalStorage'a kaydet
+      localStorage.setItem('providerSettings', JSON.stringify(newSettings));
+      
+      return newSettings;
+    });
+  };
+
+  // Component ilk yüklendiğinde localStorage'dan provider ayarlarını yükle
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('providerSettings');
+    if (savedSettings) {
+      setProviderSettings(JSON.parse(savedSettings));
+    }
+  }, []);
 
   return (
     <div className="container mt-4">
@@ -167,6 +240,7 @@ export default function Companies() {
           onDelete={handleDelete}
           onInputChange={handleInputChange}
           onSettingsSave={handleSettingsSave}
+          providerSettings={providerSettings}
         />
       )}
 

@@ -1,17 +1,38 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { NumberInput, PaxInput } from './SettingFormComponents'
+import { saveProviderData } from '../../../../services/api'
 
-const CompanySettingsModal = ({ company, onClose, onSave }) => {
+const CompanySettingsModal = ({ company, onClose, onSave, initialSettings }) => {
   const [settings, setSettings] = useState({
-    earnings: company.earnings || '',
-    promotionRate: company.promotionRate || '',
-    revenue: company.revenue || '',
+    earnings: initialSettings?.earnings || '',
+    promotionRate: initialSettings?.promotionRate || '',
+    revenue: initialSettings?.revenue || '',
+    currency: initialSettings?.currency || 'EUR',
     pax: {
-      adult: company.pax?.adult || '',
-      child: company.pax?.child || '',
-      free: company.pax?.free || ''
+      adult: initialSettings?.pax?.adult || '',
+      child: initialSettings?.pax?.child || '',
+      free: initialSettings?.pax?.free || ''
     }
   })
+
+  const [isSaving, setIsSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (initialSettings) {
+      setSettings({
+        earnings: initialSettings.earnings || '',
+        promotionRate: initialSettings.promotionRate || '',
+        revenue: initialSettings.revenue || '',
+        currency: initialSettings.currency || 'EUR',
+        pax: {
+          adult: initialSettings.pax?.adult || '',
+          child: initialSettings.pax?.child || '',
+          free: initialSettings.pax?.free || ''
+        }
+      })
+    }
+  }, [initialSettings])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -32,9 +53,19 @@ const CompanySettingsModal = ({ company, onClose, onSave }) => {
     }
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    onSave(settings)
+    setIsSaving(true)
+    setError('')
+
+    try {
+      await onSave(settings)
+      onClose()
+    } catch (err) {
+      setError('Ayarlar kaydedilirken bir hata oluştu: ' + err.message)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
@@ -50,6 +81,12 @@ const CompanySettingsModal = ({ company, onClose, onSave }) => {
           </div>
           <form onSubmit={handleSubmit}>
             <div className="modal-body">
+              {error && (
+                <div className="alert alert-danger">
+                  <i className="bi bi-exclamation-triangle me-2"></i>
+                  {error}
+                </div>
+              )}
               <div className="row mb-3">
                 <NumberInput
                     label="Şirket Ciro €"
@@ -88,7 +125,7 @@ const CompanySettingsModal = ({ company, onClose, onSave }) => {
                     value={settings.currency}
                     onChange={handleChange}
                   >
-                    <option selected value="EUR">€ (EUR)</option>
+                    <option value="EUR">€ (EUR)</option>
                     <option value="USD">$ (USD)</option>
                     <option value="TRY">₺ (TRY)</option>
                   </select>
@@ -112,7 +149,6 @@ const CompanySettingsModal = ({ company, onClose, onSave }) => {
                   onChange={handleChange}
                 />
                 <PaxInput
-                  readOnly = 'readOnly'
                   label="Free"
                   name="pax.free"
                   value={settings.pax.free}
@@ -121,23 +157,32 @@ const CompanySettingsModal = ({ company, onClose, onSave }) => {
               </div>
     
             </div>
-          <div className='row'>
-            <div className='col-md-6 p-4'>
-               <h6 className="mb-3">Toplam PAX</h6>  
-               <div className='row'>
-                <ul className='list-unstyled d-flex justify-content-between'>
-                  <li>Yetişkin: </li>
-                  <li>Çocuk: </li>
-                  <li>Free: </li>
-                </ul> 
-               </div>
-            </div>
-          </div>
+   
             <div className="modal-footer">
-              <button type="button" className="btn btn-secondary" onClick={onClose}>İptal</button>
-              <button type="submit" className="btn btn-primary">
-                <i className="bi bi-save me-2"></i>
-                Kaydet
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                onClick={onClose}
+                disabled={isSaving}
+              >
+                İptal
+              </button>
+              <button 
+                type="submit" 
+                className="btn btn-primary"
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Kaydediliyor...
+                  </>
+                ) : (
+                  <>
+                    <i className="bi bi-save me-2"></i>
+                    Kaydet
+                  </>
+                )}
               </button>
             </div>
           </form>

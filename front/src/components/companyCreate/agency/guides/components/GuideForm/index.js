@@ -1,5 +1,5 @@
 import React from 'react';
-import PersonalInfo from './PersonalInfo';
+import PersonalInfo from './Personalinfo';
 import LanguageSelector from './LanguageSelector';
 import RegionSelector from './RegionSelector';
 

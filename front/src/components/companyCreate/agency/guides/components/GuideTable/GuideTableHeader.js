@@ -11,7 +11,6 @@ const GuideTableHeader = () => {
         <th>Telefon</th>
         <th>Bölge</th>
         <th>Rehber Grubu</th>
-        <th>Komisyon</th>
         <th>Bildiği Diller</th>
         <th>Durum</th>
         <th>İşlemler</th>

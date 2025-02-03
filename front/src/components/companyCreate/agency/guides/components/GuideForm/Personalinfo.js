@@ -60,7 +60,7 @@ const PersonalInfo = ({ formData, onChange }) => {
         </div>
       </div>
 
-      <div className="col-md-6">
+      <div className="col-md-12">
         <div className="form-group">
           <label className="form-label">Rehber Grubu</label>
           <input
@@ -74,21 +74,7 @@ const PersonalInfo = ({ formData, onChange }) => {
         </div>
       </div>
 
-      <div className="col-md-6">
-        <div className="form-group">
-          <label className="form-label">Komisyon (%)</label>
-          <input
-            type="number"
-            className="form-control"
-            name="commission"
-            value={formData.commission}
-            onChange={onChange}
-            required
-            min="0"
-            max="100"
-          />
-        </div>
-      </div>
+
     </>
   );
 };
