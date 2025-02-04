@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Anamakine: localhost:3306
--- Üretim Zamanı: 03 Şub 2025, 22:59:26
+-- Üretim Zamanı: 04 Şub 2025, 00:00:07
 -- Sunucu sürümü: 8.0.41-0ubuntu0.24.04.1
 -- PHP Sürümü: 8.3.6
 
@@ -20,6 +20,36 @@ SET time_zone = "+00:00";
 --
 -- Veritabanı: `tour_program`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Tablo için tablo yapısı `agencyguide`
+--
+
+CREATE TABLE `agencyguide` (
+  `id` int NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `surname` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `is_active` tinyint(1) DEFAULT '1',
+  `region` json DEFAULT NULL,
+  `guide_group` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `nickname` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `languages` json DEFAULT NULL,
+  `other_languages` text COLLATE utf8mb4_unicode_ci,
+  `phone` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `code` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `company_id` int NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Tablo döküm verisi `agencyguide`
+--
+
+INSERT INTO `agencyguide` (`id`, `name`, `surname`, `is_active`, `region`, `guide_group`, `nickname`, `languages`, `other_languages`, `phone`, `code`, `company_id`, `created_at`, `updated_at`) VALUES
+(41, 'Şahin', 'Yücel', 1, '[\"SIDE\", \"MANAVGAT\"]', 'yeniler', 'Guide', '{\"rusca\": true, \"arapca\": false, \"almanca\": true, \"fransizca\": false, \"ingilizce\": false}', '', '05052325082', 'WTOHWA5F', 76, '2025-02-03 22:25:21', '2025-02-03 22:25:21');
 
 -- --------------------------------------------------------
 
@@ -67,6 +97,32 @@ INSERT INTO `agencyrolemembers` (`id`, `username`, `position`, `password`, `comp
 (73, 'admin', 'admin', '$2b$10$TFre8ZUtzZHCmhs3rC2OLeFdsDZJclQDg.bsUBPYKccqD0yC1JDXm', 76, '2025-02-01 17:33:11'),
 (74, 'yusuf', 'operasyon', '$2b$10$VxANN/tEHeE1cpz0D.HRh.yOmBa8KHP4ZvtFRqdpRb6Z/up8xBsXe', 76, '2025-02-02 00:08:26'),
 (75, 'admin', 'admin', '$2b$10$rqcCbAn2z2likbQcjYdVjut4DyeeHTXkSH9x2sBCLd8pu1QItYCqi', 77, '2025-02-02 00:21:27');
+
+-- --------------------------------------------------------
+
+--
+-- Tablo için tablo yapısı `agency_guide_settings`
+--
+
+CREATE TABLE `agency_guide_settings` (
+  `id` int NOT NULL,
+  `guide_id` int NOT NULL,
+  `earnings` decimal(10,2) DEFAULT '0.00',
+  `promotion_rate` decimal(5,2) DEFAULT '0.00',
+  `revenue` decimal(10,2) DEFAULT '0.00',
+  `pax_adult` int DEFAULT '0',
+  `pax_child` int DEFAULT '0',
+  `pax_free` int DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Tablo döküm verisi `agency_guide_settings`
+--
+
+INSERT INTO `agency_guide_settings` (`id`, `guide_id`, `earnings`, `promotion_rate`, `revenue`, `pax_adult`, `pax_child`, `pax_free`, `created_at`, `updated_at`) VALUES
+(27, 41, 600.00, 40.00, 1000.00, 10, 5, 1, '2025-02-03 22:25:21', '2025-02-03 22:25:21');
 
 -- --------------------------------------------------------
 
@@ -168,6 +224,30 @@ INSERT INTO `companyusers` (`id`, `company_name`, `position`, `ref_code`, `compa
 -- --------------------------------------------------------
 
 --
+-- Tablo için tablo yapısı `create_areaslist`
+--
+
+CREATE TABLE `create_areaslist` (
+  `id` int NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `company_id` int NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Tablo döküm verisi `create_areaslist`
+--
+
+INSERT INTO `create_areaslist` (`id`, `name`, `company_id`, `created_at`, `updated_at`) VALUES
+(483, 'ANTALYA', 76, '2025-02-03 21:26:30', '2025-02-03 21:26:30'),
+(484, 'ALANYA', 76, '2025-02-03 21:26:30', '2025-02-03 21:26:30'),
+(485, 'SIDE', 76, '2025-02-03 21:26:30', '2025-02-03 21:26:30'),
+(486, 'MANAVGAT', 76, '2025-02-03 21:26:30', '2025-02-03 21:26:30');
+
+-- --------------------------------------------------------
+
+--
 -- Tablo için tablo yapısı `regionslist`
 --
 
@@ -228,6 +308,31 @@ INSERT INTO `role_permissions` (`id`, `company_id`, `role_name`, `page_id`, `has
 -- --------------------------------------------------------
 
 --
+-- Tablo için tablo yapısı `safe`
+--
+
+CREATE TABLE `safe` (
+  `id` int NOT NULL,
+  `company_id` int NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type` enum('cash','pos') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `pos_commission_rate` decimal(5,2) DEFAULT NULL,
+  `balance` decimal(10,2) DEFAULT '0.00',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Tablo döküm verisi `safe`
+--
+
+INSERT INTO `safe` (`id`, `company_id`, `name`, `type`, `pos_commission_rate`, `balance`, `created_at`, `updated_at`) VALUES
+(1, 76, 'TL', 'cash', NULL, 1000.00, '2025-02-03 22:28:34', '2025-02-03 22:30:14'),
+(2, 76, 'EURO', 'pos', 5.00, 300.00, '2025-02-03 22:29:11', '2025-02-03 22:30:23');
+
+-- --------------------------------------------------------
+
+--
 -- Tablo için tablo yapısı `tourlist`
 --
 
@@ -249,6 +354,120 @@ INSERT INTO `tourlist` (`id`, `name`, `company_id`, `created_at`, `updated_at`) 
 (675, 'QUAD BIKE', 76, '2025-02-03 21:26:30', '2025-02-03 21:26:30'),
 (676, 'ALANYA CITY TOUR', 76, '2025-02-03 21:26:30', '2025-02-03 21:26:30'),
 (677, 'BUGGYDOUBLE', 76, '2025-02-03 21:26:30', '2025-02-03 21:26:30');
+
+-- --------------------------------------------------------
+
+--
+-- Tablo için tablo yapısı `tours`
+--
+
+CREATE TABLE `tours` (
+  `id` int NOT NULL,
+  `company_ref` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tour_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `operator` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `operator_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `adult_price` decimal(10,2) DEFAULT '0.00',
+  `child_price` decimal(10,2) DEFAULT '0.00',
+  `is_active` tinyint(1) DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `priority` int DEFAULT '3'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Tablo döküm verisi `tours`
+--
+
+INSERT INTO `tours` (`id`, `company_ref`, `tour_name`, `operator`, `operator_id`, `adult_price`, `child_price`, `is_active`, `created_at`, `updated_at`, `priority`) VALUES
+(1397, '76', 'BUGGYDOUBLE', 'oncu', 'MJ20MWNZ', 30.00, 15.00, 1, '2025-02-03 22:37:36', '2025-02-03 22:37:36', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Tablo için tablo yapısı `tour_days`
+--
+
+CREATE TABLE `tour_days` (
+  `id` int NOT NULL,
+  `tour_id` int NOT NULL,
+  `day_number` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ;
+
+--
+-- Tablo döküm verisi `tour_days`
+--
+
+INSERT INTO `tour_days` (`id`, `tour_id`, `day_number`, `created_at`) VALUES
+(9555, 1397, 1, '2025-02-03 22:37:36'),
+(9556, 1397, 0, '2025-02-03 22:37:36'),
+(9557, 1397, 3, '2025-02-03 22:37:36'),
+(9558, 1397, 0, '2025-02-03 22:37:36'),
+(9559, 1397, 5, '2025-02-03 22:37:36'),
+(9560, 1397, 0, '2025-02-03 22:37:36'),
+(9561, 1397, 0, '2025-02-03 22:37:36');
+
+-- --------------------------------------------------------
+
+--
+-- Tablo için tablo yapısı `tour_options`
+--
+
+CREATE TABLE `tour_options` (
+  `id` int NOT NULL,
+  `tour_id` int NOT NULL,
+  `option_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `price` decimal(10,2) DEFAULT '0.00',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tablo için tablo yapısı `tour_pickup_times`
+--
+
+CREATE TABLE `tour_pickup_times` (
+  `id` int NOT NULL,
+  `tour_id` int NOT NULL,
+  `hour` varchar(2) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `minute` varchar(2) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `region` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `area` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `period_active` tinyint(1) DEFAULT '0',
+  `period` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Tablo döküm verisi `tour_pickup_times`
+--
+
+INSERT INTO `tour_pickup_times` (`id`, `tour_id`, `hour`, `minute`, `region`, `area`, `period_active`, `period`, `created_at`) VALUES
+(4781, 1397, '12', '30', 'SIDE', 'KUMKOY', 0, '2', '2025-02-03 22:37:36'),
+(4782, 1397, '10', '30', 'SIDE', 'COLAKLI', 1, '1', '2025-02-03 22:37:36'),
+(4783, 1397, '10', '30', 'SIDE', 'GUNDOGDU', 1, '1', '2025-02-03 22:37:36'),
+(4784, 1397, '12', '30', 'SIDE', 'COLAKLI', 1, '2', '2025-02-03 22:37:36');
+
+-- --------------------------------------------------------
+
+--
+-- Tablo için tablo yapısı `tour_regions`
+--
+
+CREATE TABLE `tour_regions` (
+  `tour_id` int NOT NULL,
+  `region_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Tablo döküm verisi `tour_regions`
+--
+
+INSERT INTO `tour_regions` (`tour_id`, `region_name`) VALUES
+(1397, 'ALANYA'),
+(1397, 'ANTALYA');
 
 -- --------------------------------------------------------
 
@@ -275,6 +494,13 @@ INSERT INTO `users` (`id`, `username`, `email`, `password`) VALUES
 --
 
 --
+-- Tablo için indeksler `agencyguide`
+--
+ALTER TABLE `agencyguide`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_company` (`company_id`);
+
+--
 -- Tablo için indeksler `agencyprovider`
 --
 ALTER TABLE `agencyprovider`
@@ -288,6 +514,13 @@ ALTER TABLE `agencyprovider`
 ALTER TABLE `agencyrolemembers`
   ADD PRIMARY KEY (`id`),
   ADD KEY `company_id` (`company_id`);
+
+--
+-- Tablo için indeksler `agency_guide_settings`
+--
+ALTER TABLE `agency_guide_settings`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_guide` (`guide_id`);
 
 --
 -- Tablo için indeksler `agency_provider_settings`
@@ -311,6 +544,12 @@ ALTER TABLE `companyusers`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Tablo için indeksler `create_areaslist`
+--
+ALTER TABLE `create_areaslist`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Tablo için indeksler `regionslist`
 --
 ALTER TABLE `regionslist`
@@ -325,11 +564,53 @@ ALTER TABLE `role_permissions`
   ADD UNIQUE KEY `unique_permission` (`company_id`,`role_name`,`page_id`);
 
 --
+-- Tablo için indeksler `safe`
+--
+ALTER TABLE `safe`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_company` (`company_id`);
+
+--
 -- Tablo için indeksler `tourlist`
 --
 ALTER TABLE `tourlist`
   ADD PRIMARY KEY (`id`),
   ADD KEY `company_id` (`company_id`);
+
+--
+-- Tablo için indeksler `tours`
+--
+ALTER TABLE `tours`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_company_ref` (`company_ref`),
+  ADD KEY `idx_operator_id` (`operator_id`);
+
+--
+-- Tablo için indeksler `tour_days`
+--
+ALTER TABLE `tour_days`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_tour_id` (`tour_id`);
+
+--
+-- Tablo için indeksler `tour_options`
+--
+ALTER TABLE `tour_options`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_tour_id` (`tour_id`);
+
+--
+-- Tablo için indeksler `tour_pickup_times`
+--
+ALTER TABLE `tour_pickup_times`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_tour_id` (`tour_id`);
+
+--
+-- Tablo için indeksler `tour_regions`
+--
+ALTER TABLE `tour_regions`
+  ADD PRIMARY KEY (`tour_id`,`region_name`) USING BTREE;
 
 --
 -- Tablo için indeksler `users`
@@ -343,6 +624,12 @@ ALTER TABLE `users`
 --
 
 --
+-- Tablo için AUTO_INCREMENT değeri `agencyguide`
+--
+ALTER TABLE `agencyguide`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
+
+--
 -- Tablo için AUTO_INCREMENT değeri `agencyprovider`
 --
 ALTER TABLE `agencyprovider`
@@ -353,6 +640,12 @@ ALTER TABLE `agencyprovider`
 --
 ALTER TABLE `agencyrolemembers`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=76;
+
+--
+-- Tablo için AUTO_INCREMENT değeri `agency_guide_settings`
+--
+ALTER TABLE `agency_guide_settings`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
 
 --
 -- Tablo için AUTO_INCREMENT değeri `agency_provider_settings`
@@ -373,6 +666,12 @@ ALTER TABLE `companyusers`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=78;
 
 --
+-- Tablo için AUTO_INCREMENT değeri `create_areaslist`
+--
+ALTER TABLE `create_areaslist`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=487;
+
+--
 -- Tablo için AUTO_INCREMENT değeri `regionslist`
 --
 ALTER TABLE `regionslist`
@@ -385,10 +684,40 @@ ALTER TABLE `role_permissions`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6606;
 
 --
+-- Tablo için AUTO_INCREMENT değeri `safe`
+--
+ALTER TABLE `safe`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
 -- Tablo için AUTO_INCREMENT değeri `tourlist`
 --
 ALTER TABLE `tourlist`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=678;
+
+--
+-- Tablo için AUTO_INCREMENT değeri `tours`
+--
+ALTER TABLE `tours`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1398;
+
+--
+-- Tablo için AUTO_INCREMENT değeri `tour_days`
+--
+ALTER TABLE `tour_days`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+
+--
+-- Tablo için AUTO_INCREMENT değeri `tour_options`
+--
+ALTER TABLE `tour_options`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
+
+--
+-- Tablo için AUTO_INCREMENT değeri `tour_pickup_times`
+--
+ALTER TABLE `tour_pickup_times`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4785;
 
 --
 -- Tablo için AUTO_INCREMENT değeri `users`
@@ -401,6 +730,12 @@ ALTER TABLE `users`
 --
 
 --
+-- Tablo kısıtlamaları `agencyguide`
+--
+ALTER TABLE `agencyguide`
+  ADD CONSTRAINT `agencyguide_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companyusers` (`id`) ON DELETE CASCADE;
+
+--
 -- Tablo kısıtlamaları `agencyprovider`
 --
 ALTER TABLE `agencyprovider`
@@ -411,6 +746,12 @@ ALTER TABLE `agencyprovider`
 --
 ALTER TABLE `agencyrolemembers`
   ADD CONSTRAINT `agencyrolemembers_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companyusers` (`id`);
+
+--
+-- Tablo kısıtlamaları `agency_guide_settings`
+--
+ALTER TABLE `agency_guide_settings`
+  ADD CONSTRAINT `agency_guide_settings_ibfk_1` FOREIGN KEY (`guide_id`) REFERENCES `agencyguide` (`id`) ON DELETE CASCADE;
 
 --
 -- Tablo kısıtlamaları `agency_provider_settings`
@@ -438,10 +779,40 @@ ALTER TABLE `role_permissions`
   ADD CONSTRAINT `role_permissions_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companyusers` (`id`);
 
 --
+-- Tablo kısıtlamaları `safe`
+--
+ALTER TABLE `safe`
+  ADD CONSTRAINT `safe_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companyusers` (`id`) ON DELETE CASCADE;
+
+--
 -- Tablo kısıtlamaları `tourlist`
 --
 ALTER TABLE `tourlist`
   ADD CONSTRAINT `tourlist_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `companyusers` (`id`) ON DELETE CASCADE;
+
+--
+-- Tablo kısıtlamaları `tour_days`
+--
+ALTER TABLE `tour_days`
+  ADD CONSTRAINT `tour_days_ibfk_1` FOREIGN KEY (`tour_id`) REFERENCES `tours` (`id`) ON DELETE CASCADE;
+
+--
+-- Tablo kısıtlamaları `tour_options`
+--
+ALTER TABLE `tour_options`
+  ADD CONSTRAINT `tour_options_ibfk_1` FOREIGN KEY (`tour_id`) REFERENCES `tours` (`id`) ON DELETE CASCADE;
+
+--
+-- Tablo kısıtlamaları `tour_pickup_times`
+--
+ALTER TABLE `tour_pickup_times`
+  ADD CONSTRAINT `tour_pickup_times_ibfk_1` FOREIGN KEY (`tour_id`) REFERENCES `tours` (`id`) ON DELETE CASCADE;
+
+--
+-- Tablo kısıtlamaları `tour_regions`
+--
+ALTER TABLE `tour_regions`
+  ADD CONSTRAINT `tour_regions_ibfk_1` FOREIGN KEY (`tour_id`) REFERENCES `tours` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
