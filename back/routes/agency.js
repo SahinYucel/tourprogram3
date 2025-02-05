@@ -411,75 +411,7 @@ module.exports = (db) => {
     });
   });
 
-  // Guide endpoints
-  router.post('/guides/save', async (req, res) => {
-    const { companyId, guides } = req.body;
-
-    try {
-      // Transaction başlat
-      await db.beginTransaction();
-
-      // Önce bu şirkete ait tüm rehberleri sil
-      await db.query('DELETE FROM agencyguide WHERE company_id = ?', [companyId]);
-
-      // Yeni rehberleri ekle
-      const insertGuideSql = `
-        INSERT INTO agencyguide (
-          name, surname, is_active, region, guide_group,
-          nickname, languages, other_languages, phone, code,
-          company_id
-        ) VALUES ?
-      `;
-
-      const guideValues = guides.map(guide => [
-        guide.name,
-        guide.surname, 
-        guide.isActive ? 1 : 0,
-        JSON.stringify(guide.region),
-        guide.guideGroup,
-        guide.nickname,
-        JSON.stringify(guide.languages),
-        guide.otherLanguages,
-        guide.phone,
-        guide.code,
-        companyId
-      ]);
-
-      const [guideResult] = await db.query(insertGuideSql, [guideValues]);
-
-      // Rehber ayarlarını kaydet
-      const insertSettingsSql = `
-        INSERT INTO agency_guide_settings (
-          guide_id, earnings, promotion_rate, revenue,
-          pax_adult, pax_child, pax_free
-        ) VALUES ?
-      `;
-
-      const settingsValues = guides
-        .filter(guide => guide.earnings || guide.promotionRate || guide.revenue || guide.pax)
-        .map((guide, index) => [
-          guideResult.insertId + index,
-          guide.earnings || 0,
-          guide.promotionRate || 0,
-          guide.revenue || 0,
-          guide.pax?.adult || 0,
-          guide.pax?.child || 0,
-          guide.pax?.free || 0
-        ]);
-
-      if (settingsValues.length > 0) {
-        await db.query(insertSettingsSql, [settingsValues]);
-      }
-
-      await db.commit();
-      res.json({ success: true, message: 'Rehberler başarıyla kaydedildi' });
-
-    } catch (error) {
-      await db.rollback();
-      console.error('Rehber kaydetme hatası:', error);
-      res.status(500).json({ error: error.message });
-    }
-  });
+  
 
   return router;
 }; 

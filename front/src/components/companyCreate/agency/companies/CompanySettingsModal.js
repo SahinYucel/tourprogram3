@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { NumberInput, PaxInput } from './SettingFormComponents'
-import { saveProviderData } from '../../../../services/api'
+//import { saveProviderData } from '../../../../services/api'
 
 const CompanySettingsModal = ({ company, onClose, onSave, initialSettings }) => {
   const [settings, setSettings] = useState({
     earnings: initialSettings?.earnings || '',
-    promotionRate: initialSettings?.promotionRate || '',
     revenue: initialSettings?.revenue || '',
     currency: initialSettings?.currency || 'EUR',
     pax: {
@@ -22,7 +21,6 @@ const CompanySettingsModal = ({ company, onClose, onSave, initialSettings }) => 
     if (initialSettings) {
       setSettings({
         earnings: initialSettings.earnings || '',
-        promotionRate: initialSettings.promotionRate || '',
         revenue: initialSettings.revenue || '',
         currency: initialSettings.currency || 'EUR',
         pax: {
@@ -97,39 +95,30 @@ const CompanySettingsModal = ({ company, onClose, onSave, initialSettings }) => 
                   step="0.01"
                 />
                 <NumberInput
-                  label="Şirket Hak Edişi Oranı"
-                  name="promotionRate"
-                  value={settings.promotionRate}
-                  onChange={handleChange}
-                  placeholder="0 %  "
-                  min="0"
-                  max="100"
-                  suffix="%"
-                />
+                      label="Şirket Hak Edişi"
+                      name="earnings"
+                      value={settings.earnings}
+                      onChange={handleChange}
+                      placeholder="0.00"
+                      step="0.01"
+                    />
               </div>
               
               <div className="row mb-3">
-                  <NumberInput
-                    label="Şirket Hak Edişi"
-                    name="earnings"
-                    value={settings.earnings}
-                    onChange={handleChange}
-                    placeholder="0.00"
-                    step="0.01"
-                  />
-                   <div className="col-md-6">
-                  <label className="form-label">Para Birimi</label>
-                  <select 
-                    className="form-select w-100"
-                    name="currency"
-                    value={settings.currency}
-                    onChange={handleChange}
-                  >
-                    <option value="EUR">€ (EUR)</option>
-                    <option value="USD">$ (USD)</option>
-                    <option value="TRY">₺ (TRY)</option>
-                  </select>
-                </div>
+                  
+                   <div className="col-md-12">
+                     <label className="form-label">Para Birimi</label>
+                        <select 
+                          className="form-select w-100"
+                          name="currency"
+                          value={settings.currency}
+                          onChange={handleChange}
+                        >
+                          <option value="EUR">€ (EUR)</option>
+                          <option value="USD">$ (USD)</option>
+                          <option value="TRY">₺ (TRY)</option>
+                        </select>
+                    </div>
               </div>
 
              
@@ -143,7 +132,7 @@ const CompanySettingsModal = ({ company, onClose, onSave, initialSettings }) => 
                   onChange={handleChange}
                 />
                 <PaxInput
-                  label="Pax Yetişkin "
+                  label="Pax Child "
                   name="pax.child"
                   value={settings.pax.child}
                   onChange={handleChange}

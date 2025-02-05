@@ -62,6 +62,23 @@ const PersonalInfo = ({ formData, onChange }) => {
 
       <div className="col-md-12">
         <div className="form-group">
+          <label className="form-label">Şifre</label>
+          <input
+            type="text"
+            className="form-control"
+            name="guide_password"
+            value={formData.guide_password}
+            onChange={onChange}
+            pattern="[0-9]{6}"
+            maxLength="12"
+            placeholder="6 haneli şifre giriniz"
+            required
+          />
+        </div>
+      </div>
+
+      <div className="col-md-12">
+        <div className="form-group">
           <label className="form-label">Rehber Grubu</label>
           <input
             type="text"

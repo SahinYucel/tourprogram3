@@ -21,6 +21,15 @@ export default function Guides() {
     return code;
   };
 
+  const generatePassword = () => {
+    const chars = '0123456789';
+    let password = '';
+    for (let i = 0; i < 6; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+  };
+
   const emptyFormData = {
     name: '',
     surname: '',
@@ -32,6 +41,7 @@ export default function Guides() {
     otherLanguages: '',
     phone: '',
     code: generateCode(),
+    guide_password: '',
   };
 
   const [guides, setGuides] = useState([]);
@@ -172,6 +182,7 @@ export default function Guides() {
       id: editingId || Date.now(),
       languagesDisplay: formatLanguages(formData.languages, formData.otherLanguages),
       code: formData.code || generateCode(),
+      guide_password: formData.guide_password,
     };
 
     if (editingId) {
@@ -179,6 +190,21 @@ export default function Guides() {
       setEditingId(null);
     } else {
       setGuides(prev => [...prev, formattedGuide]);
+    }
+
+    // Rehber şifresini locale kaydet
+    try {
+      const guideCredentials = {
+        code: formattedGuide.code,
+        password: formattedGuide.guide_password
+      };
+      const existingCredentials = JSON.parse(localStorage.getItem('guideCredentials')) || {};
+      localStorage.setItem('guideCredentials', JSON.stringify({
+        ...existingCredentials,
+        [formattedGuide.code]: guideCredentials
+      }));
+    } catch (error) {
+      console.error('Rehber bilgileri locale kaydedilirken hata:', error);
     }
     
     setFormData({
@@ -216,6 +242,7 @@ export default function Guides() {
         earnings: parseFloat(guide.earnings) || 0,
         promotionRate: parseFloat(guide.promotionRate) || 0,
         revenue: parseFloat(guide.revenue) || 0,
+        guide_password: guide.guide_password,
         pax: {
           adult: parseInt(guide.pax?.adult) || 0,
           child: parseInt(guide.pax?.child) || 0,

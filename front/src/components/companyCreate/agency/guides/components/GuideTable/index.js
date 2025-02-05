@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import GuideTableRow from './GuideTableRow';
 import GuideSettingsModal from '../GuideSettingsModal';
 
 const GuideTable = ({ guides, onEdit, onDelete, onSettingsSave }) => {
@@ -24,26 +23,53 @@ const GuideTable = ({ guides, onEdit, onDelete, onSettingsSave }) => {
       <table className="table table-hover">
         <thead>
           <tr>
-            <th>Kod</th>
             <th>İsim</th>
             <th>Soyisim</th>
-            <th>Bölge</th>
-            <th>Grup</th>
-            <th>Telefon</th>
+            <th>Kod</th>
+            <th>Şifre</th>
+            <th>Bölgeler</th>
             <th>Diller</th>
+            <th>Telefon</th>
             <th>Durum</th>
             <th>İşlemler</th>
           </tr>
         </thead>
         <tbody>
           {guides.map((guide) => (
-            <GuideTableRow
-              key={guide.id}
-              guide={guide}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onSettingsClick={handleSettingsClick}
-            />
+            <tr key={guide.id}>
+              <td>{guide.name}</td>
+              <td>{guide.surname}</td>
+              <td>{guide.code}</td>
+              <td>{guide.guide_password}</td>
+              <td>{Array.isArray(guide.region) ? guide.region.join(', ') : guide.region}</td>
+              <td>{guide.languagesDisplay}</td>
+              <td>{guide.phone}</td>
+              <td>
+                <span className={`badge ${guide.isActive ? 'bg-success' : 'bg-danger'}`}>
+                  {guide.isActive ? 'Aktif' : 'Pasif'}
+                </span>
+              </td>
+              <td>
+                <button
+                  className="btn btn-sm btn-primary me-2"
+                  onClick={() => onEdit(guide)}
+                >
+                  Düzenle
+                </button>
+                <button
+                  className="btn btn-sm btn-danger me-2"
+                  onClick={() => onDelete(guide.id)}
+                >
+                  Sil
+                </button>
+                <button
+                  className="btn btn-sm btn-info"
+                  onClick={() => handleSettingsClick(guide)}
+                >
+                  Ayarlar
+                </button>
+              </td>
+            </tr>
           ))}
         </tbody>
       </table>

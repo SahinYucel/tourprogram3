@@ -10,7 +10,7 @@ export const loadMenuItems = (loggedInUser, company, setMenuItems, setIsMenuLoad
     {
       path: '/companyAgencyDashboard/companies',
       icon: 'bi-building',
-      text: 'Şirketler',
+      text: 'Tedarikciler',
       id: 'companies'
     },
   

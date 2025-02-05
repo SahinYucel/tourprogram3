@@ -5,7 +5,7 @@ module.exports = (db) => {
   // Provider data kaydetme endpoint'i
   router.post('/:providerId', async (req, res) => {
     const { providerId } = req.params;
-    const { earnings, promotionRate, revenue, currency, pax } = req.body;
+    const { earnings, revenue, currency, pax } = req.body;
 
     try {
       // Önce mevcut kaydı kontrol et
@@ -21,7 +21,6 @@ module.exports = (db) => {
           const updateSql = `
             UPDATE agency_provider_settings 
             SET earnings = ?, 
-                promotion_rate = ?, 
                 revenue = ?, 
                 currency = ?,
                 pax_adult = ?,
@@ -32,7 +31,6 @@ module.exports = (db) => {
 
           const values = [
             earnings || 0,
-            promotionRate || 0,
             revenue || 0,
             currency || 'EUR',
             pax?.adult || 0,
@@ -52,14 +50,13 @@ module.exports = (db) => {
           // Yeni kayıt oluştur
           const insertSql = `
             INSERT INTO agency_provider_settings 
-            (provider_id, earnings, promotion_rate, revenue, currency, pax_adult, pax_child, pax_free)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            (provider_id, earnings, revenue, currency, pax_adult, pax_child, pax_free)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
           `;
 
           const values = [
             providerId,
             earnings || 0,
-            promotionRate || 0,
             revenue || 0,
             currency || 'EUR',
             pax?.adult || 0,
@@ -87,7 +84,7 @@ module.exports = (db) => {
     const { providerId } = req.params;
 
     const sql = `
-      SELECT earnings, promotion_rate, revenue, currency, 
+      SELECT earnings, revenue, currency, 
              pax_adult, pax_child, pax_free
       FROM agency_provider_settings 
       WHERE provider_id = ?
@@ -102,7 +99,6 @@ module.exports = (db) => {
       if (results.length === 0) {
         return res.json({
           earnings: 0,
-          promotionRate: 0,
           revenue: 0,
           currency: 'EUR',
           pax: {
@@ -116,7 +112,6 @@ module.exports = (db) => {
       const data = results[0];
       res.json({
         earnings: data.earnings,
-        promotionRate: data.promotion_rate,
         revenue: data.revenue,
         currency: data.currency,
         pax: {

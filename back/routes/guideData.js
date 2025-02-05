@@ -56,9 +56,9 @@ module.exports = (db) => {
           const insertGuideSql = `
             INSERT INTO agencyguide (
               name, surname, is_active, region, guide_group,
-              nickname, languages, other_languages, phone, code,
+              nickname, languages, other_languages, phone, code, sifre,
               company_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `;
 
           const guideResult = await query(insertGuideSql, [
@@ -72,6 +72,7 @@ module.exports = (db) => {
             guide.otherLanguages,
             guide.phone,
             guide.code,
+            guide.guide_password,
             companyId
           ]);
 
@@ -130,7 +131,33 @@ module.exports = (db) => {
 
       // Önce rehberleri al
       const guideSql = `
-        SELECT * FROM agencyguide WHERE company_id = ?
+        SELECT 
+          ag.*,
+          CONCAT(
+            CASE 
+              WHEN ag.languages IS NOT NULL AND ag.languages != '{}'
+              THEN (
+                SELECT GROUP_CONCAT(
+                  CASE 
+                    WHEN JSON_EXTRACT(ag.languages, CONCAT('$.', lang)) = true 
+                    THEN CONCAT(UPPER(LEFT(lang, 1)), LOWER(SUBSTRING(lang, 2)))
+                  END
+                )
+                FROM JSON_TABLE(
+                  '[\"almanca\",\"rusca\",\"ingilizce\",\"fransizca\",\"arapca\"]',
+                  '$[*]' COLUMNS (lang VARCHAR(50) PATH '$')
+                ) langs
+              )
+              ELSE ''
+            END,
+            CASE 
+              WHEN ag.other_languages != '' 
+              THEN CONCAT(IF(JSON_EXTRACT(ag.languages, '$.*') IS NOT NULL, ', ', ''), ag.other_languages)
+              ELSE ''
+            END
+          ) as languagesDisplay
+        FROM agencyguide ag 
+        WHERE ag.company_id = ?
       `;
       
       const guides = await query(guideSql, [companyId]);
@@ -171,11 +198,6 @@ module.exports = (db) => {
             parsedLanguages = typeof guide.languages === 'object' ? guide.languages : {};
           }
 
-          console.log('Parsed data:', {
-            region: parsedRegion,
-            languages: parsedLanguages
-          });
-
           return {
             id: guide.id,
             name: guide.name,
@@ -185,10 +207,11 @@ module.exports = (db) => {
             guideGroup: guide.guide_group,
             nickname: guide.nickname,
             languages: parsedLanguages,
+            languagesDisplay: guide.languagesDisplay,
             otherLanguages: guide.other_languages,
             phone: guide.phone,
             code: guide.code,
-            // Ayarları ekle
+            guide_password: guide.sifre,
             earnings: guideSettings.earnings || 0,
             promotionRate: guideSettings.promotionRate || 0,
             revenue: guideSettings.revenue || 0,
@@ -238,6 +261,96 @@ module.exports = (db) => {
       await db.rollback();
       console.error('Rehber silme hatası:', error);
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Guide login endpoint'i
+  router.post('/guide-login', async (req, res) => {
+    const { code, password } = req.body;
+
+    try {
+      // Rehberi ve şirket bilgisini getir
+      const sql = `
+        SELECT g.*, c.company_name 
+        FROM agencyguide g
+        JOIN companyusers c ON g.company_id = c.id
+        WHERE g.code = ?
+      `;
+      
+      const guides = await query(sql, [code]);
+
+      if (guides.length === 0) {
+        return res.status(401).json({
+          success: false,
+          message: 'Kullanıcı bulunamadı'
+        });
+      }
+
+      const guide = guides[0];
+
+      // Şifre kontrolü
+      if (guide.sifre !== password) {
+        return res.status(401).json({
+          success: false,
+          message: 'Şifre hatalı'
+        });
+      }
+
+      // Rehber aktif mi kontrolü
+      if (!guide.is_active) {
+        return res.status(403).json({
+          success: false,
+          message: 'Hesabınız aktif değil'
+        });
+      }
+
+      // Rehber ayarlarını getir
+      const settingsSql = `
+        SELECT earnings, promotion_rate, revenue, 
+               pax_adult, pax_child, pax_free
+        FROM agency_guide_settings 
+        WHERE guide_id = ?
+      `;
+      
+      const settings = await query(settingsSql, [guide.id]);
+
+      // Token oluştur (gerçek uygulamada JWT kullanılabilir)
+      const token = 'dummy-token-' + Math.random().toString(36).substring(7);
+
+      // Response objesi
+      const response = {
+        success: true,
+        data: {
+          id: guide.id,
+          name: guide.name,
+          surname: guide.surname,
+          code: guide.code,
+          companyId: guide.company_id,
+          companyName: guide.company_name,
+          region: JSON.parse(guide.region || '[]'),
+          settings: settings.length > 0 ? {
+            earnings: settings[0].earnings,
+            promotionRate: settings[0].promotion_rate,
+            revenue: settings[0].revenue,
+            pax: {
+              adult: settings[0].pax_adult,
+              child: settings[0].pax_child,
+              free: settings[0].pax_free
+            }
+          } : null
+        },
+        token
+      };
+
+      res.json(response);
+
+    } catch (error) {
+      console.error('Guide login error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Giriş işlemi sırasında bir hata oluştu',
+        error: error.message
+      });
     }
   });
 

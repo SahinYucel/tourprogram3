@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 // Production API URL
-//const API_URL = 'http://localhost:5000';
-const API_URL = 'http://13.216.32.130:5000';
+const API_URL = 'http://localhost:5000';
+//const API_URL = 'http://13.216.32.130:5000';
 
 
 const api = axios.create({
@@ -120,7 +120,7 @@ export const deleteTour = async (tourId) => {
   }
 };
 
-// Currency endpoints
+
 export const getCurrencyRates = () => api.get('/currency');
 
 export const saveProviderData = async (providerId, data) => {return await api.post(`/provider-data/${providerId}`, data);};

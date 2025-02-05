@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import 'bootstrap/dist/css/bootstrap.min.css'
-import { saveProviders, getProviders, saveProviderData, getProviderData } from '../../../../services/api'
 import CompanyForm from './CompanyForm'
 import CompanyTable from './CompanyTable'
+import { saveProviders, getProviders, saveProviderData, getProviderData } from '../../../../services/api'
 import { generateAlphanumericId, formatPhoneNumber, capitalizeCompanyName } from './companyUtils'
 
 export default function Companies() {
@@ -220,7 +220,7 @@ export default function Companies() {
     <div className="container mt-4">
       <div className="row mb-4">
         <div className="col-12">
-          <h2 className="fw-bold text-primary">Şirket Ekle</h2>
+          <h2 className="fw-bold text-primary">Tedarikciler</h2>
           <hr className="my-4" />
         </div>
       </div>
