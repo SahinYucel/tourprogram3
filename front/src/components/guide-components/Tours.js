@@ -366,7 +366,7 @@ export default function Tours() {
             <div className="card-body">
               <div className="row g-3">
                 {/* Tur Seçimi */}
-                <div className="col-md-8">
+                <div className="col-md-6">
                   <label className="form-label">Tur Seçimi</label>
                   <select 
                     className="form-select"
@@ -383,7 +383,7 @@ export default function Tours() {
                 </div>
 
                 {/* Fiyat ve Para Birimi Input'ları */}
-                <div className="col-md-4">
+                <div className="col-md-6">
                   <label className="form-label">Fiyat</label>
                   <div className="input-group">
                     <input
@@ -410,7 +410,7 @@ export default function Tours() {
                 </div>
 
                 {/* Müşteri Bilgileri */}
-                <div className="col-md-4">
+                <div className="col-md-6">
                   <label className="form-label">Müşteri Adı Soyadı</label>
                   <input
                     type="text"
@@ -420,7 +420,7 @@ export default function Tours() {
                   />
                 </div>
 
-                <div className="col-md-4">
+                <div className="col-md-6">
                   <label className="form-label">Telefon</label>
                   <div className="input-group">
                     <select
@@ -434,7 +434,7 @@ export default function Tours() {
                     >
                       {countryCodes.map((country, index) => (
                         <option key={index} value={country.code}>
-                          {country.code} {country.country}
+                          {country.code} 
                         </option>
                       ))}
                     </select>
@@ -449,17 +449,6 @@ export default function Tours() {
                       placeholder="5XX XXX XX XX"
                     />
                   </div>
-                </div>
-
-                <div className="col-md-4">
-                  <label className="form-label">Otel</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={customerInfo.pickupHotel}
-                    onChange={(e) => setCustomerInfo({...customerInfo, pickupHotel: e.target.value})}
-                    placeholder="Otel adı"
-                  />
                 </div>
 
                 {/* Alınış Bilgileri */}
@@ -480,6 +469,17 @@ export default function Tours() {
                     className="form-control"
                     value={customerInfo.pickupArea}
                     onChange={(e) => setCustomerInfo({...customerInfo, pickupArea: e.target.value})}
+                  />
+                </div>
+
+                <div className="col-md-12">
+                  <label className="form-label">Otel</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={customerInfo.pickupHotel}
+                    onChange={(e) => setCustomerInfo({...customerInfo, pickupHotel: e.target.value})}
+                    placeholder="Otel adı"
                   />
                 </div>
 

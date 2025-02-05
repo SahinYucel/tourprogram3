@@ -33,14 +33,8 @@ function App() {
 
           {/* Guide Routes */}
           <Route path="/guide-login" element={<GuideLogin />} />
-          <Route 
-            path="/guide-dashboard" 
-            element={
-              <ProtectedRoute>
-                <GuideController />
-              </ProtectedRoute>
-            } 
-          />
+          <Route path="/guide-dashboard" element={<GuideController />} />
+          <Route path="/guide-dashboard/tours" element={<Tours />} />
           <Route 
             path="/guide-dashboard/wallet" 
             element={
@@ -54,14 +48,6 @@ function App() {
             element={
               <ProtectedRoute>
                 <Reservations />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/guide-dashboard/tours" 
-            element={
-              <ProtectedRoute>
-                <Tours />
               </ProtectedRoute>
             } 
           />

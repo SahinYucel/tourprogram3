@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import './styles/guide-dashboard-style.css';
@@ -7,10 +7,27 @@ import { useNavigate } from 'react-router-dom';
 export default function GuideController() {
   const navigate = useNavigate();
   
+  // Token kontrolü yap ve yoksa login sayfasına yönlendir
+  useEffect(() => {
+    const token = localStorage.getItem('guideToken');
+    if (!token) {
+      navigate('/guide-login');
+      return;
+    }
+  }, [navigate]);
+  
   // localStorage'dan guide verilerini al ve parse et
   const guideData = (() => {
     try {
-      const data = JSON.parse(localStorage.getItem('guideData')) || {};
+      const storedData = localStorage.getItem('guideData');
+      
+      // Eğer veri yoksa boş obje döndür
+      if (!storedData) {
+        console.log('No guide data found in localStorage');
+        return {};
+      }
+
+      const data = JSON.parse(storedData);
       
       // Debug için localStorage verilerini detaylı logla
       console.log('\n=== GUIDE DATA FROM LOCALSTORAGE ===');
@@ -30,6 +47,8 @@ export default function GuideController() {
       return data;
     } catch (error) {
       console.error('Guide data parse error:', error);
+      // Hata durumunda login sayfasına yönlendir
+      navigate('/guide-login');
       return {};
     }
   })();

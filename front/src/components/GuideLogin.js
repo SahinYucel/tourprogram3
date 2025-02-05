@@ -38,17 +38,25 @@ export default function GuideLogin() {
       });
 
       const data = await response.json();
+      console.log('Login response:', data);
 
       if (!response.ok) {
         throw new Error(data.message || 'Giriş başarısız');
       }
 
-      // Login başarılı
+      // Login başarılı - verileri doğru şekilde kaydedelim
       localStorage.setItem('guideToken', data.token);
-      localStorage.setItem('guideData', JSON.stringify(data.data));
+      localStorage.setItem('guideData', JSON.stringify(data.guide || data.data));
+      
+      console.log('Stored data:', {
+        token: localStorage.getItem('guideToken'),
+        guideData: localStorage.getItem('guideData')
+      });
+
       navigate('/guide-dashboard');
 
     } catch (err) {
+      console.error('Login error:', err);
       setError(err.message || 'Giriş başarısız. Lütfen bilgilerinizi kontrol ediniz.');
     } finally {
       setIsLoading(false);
