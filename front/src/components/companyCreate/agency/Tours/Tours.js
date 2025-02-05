@@ -61,6 +61,8 @@ const Tours = () => {
             operatorId: tour.mainTour.operator_id,
             adultPrice: tour.mainTour.adult_price,
             childPrice: tour.mainTour.child_price,
+            guideAdultPrice: tour.mainTour.guide_adult_price,
+            guideChildPrice: tour.mainTour.guide_child_price,
             isActive: tour.mainTour.is_active,
             priority: tour.mainTour.priority || '0',
             bolgeler: tour.mainTour.bolgeler || [],
@@ -145,6 +147,8 @@ const Tours = () => {
       operatorId: selectedCompany ? selectedCompany.alphanumericId : tourData.operator,
       adultPrice: tourData.adultPrice || 0,
       childPrice: tourData.childPrice || 0,
+      guideAdultPrice: tourData.guideAdultPrice || 0,
+      guideChildPrice: tourData.guideChildPrice || 0,
       isActive: true,
       priority: tourData.priority || '0',
       bolgeId: tourData.bolgeId || [],
@@ -202,7 +206,6 @@ const Tours = () => {
       const operatorId = tour.operatorId || 
         (savedCompanies.find(c => c.companyName === tour.operator)?.alphanumericId || tour.operator);
       
-      // Bölge isimlerini ID'lere çevirelim
       const selectedBolgeIds = bolgeler
         .filter(bolge => tour.bolgeler?.includes(bolge.name))
         .map(bolge => bolge.id);
@@ -212,6 +215,8 @@ const Tours = () => {
         operator: operatorId,
         adultPrice: tour.adultPrice || '',
         childPrice: tour.childPrice || '',
+        guideAdultPrice: tour.guideAdultPrice || '',
+        guideChildPrice: tour.guideChildPrice || '',
         selectedDays: tour.relatedData?.days || [],
         bolgeId: selectedBolgeIds,
         pickupTimes: [
@@ -525,6 +530,8 @@ const Tours = () => {
           operator_id: tour.operatorId,
           adult_price: tour.adultPrice,
           child_price: tour.childPrice,
+          guide_adult_price: tour.guideAdultPrice,
+          guide_child_price: tour.guideChildPrice,
           is_active: Boolean(tour.isActive),
           bolge_id: tour.bolgeId || [],
           bolgeler: tour.bolgeler || [],
@@ -548,6 +555,8 @@ const Tours = () => {
             operatorId: tour.mainTour.operator_id,
             adultPrice: tour.mainTour.adult_price,
             childPrice: tour.mainTour.child_price,
+            guideAdultPrice: tour.mainTour.guide_adult_price,
+            guideChildPrice: tour.mainTour.guide_child_price,
             isActive: tour.mainTour.is_active,
             priority: tour.mainTour.priority || '0',
             bolgeler: tour.mainTour.bolgeler || [],

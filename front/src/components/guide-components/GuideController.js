@@ -1,12 +1,47 @@
 import React from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
-import './guide-components/styles/guide-dashboard-style.css';
+import './styles/guide-dashboard-style.css';
 import { useNavigate } from 'react-router-dom';
 
 export default function GuideController() {
   const navigate = useNavigate();
-  const username = localStorage.getItem('guideUsername');
+  
+  // localStorage'dan guide verilerini al ve parse et
+  const guideData = (() => {
+    try {
+      const data = JSON.parse(localStorage.getItem('guideData')) || {};
+      
+      // Debug için localStorage verilerini detaylı logla
+      console.log('\n=== GUIDE DATA FROM LOCALSTORAGE ===');
+      console.log('Token:', localStorage.getItem('guideToken'));
+      console.log('Guide Data:', {
+        ...data,
+        region: Array.isArray(data.region) ? data.region : [],
+        settings: data.settings || null
+      });
+      console.log('Region Type:', Array.isArray(data.region) ? 'Array' : typeof data.region);
+      console.log('Region Values:', data.region);
+      console.log('Guide Group:', data.guideGroup);
+      console.log('Nickname:', data.nickname);
+      console.log('Settings:', data.settings);
+      console.log('===================================\n');
+
+      return data;
+    } catch (error) {
+      console.error('Guide data parse error:', error);
+      return {};
+    }
+  })();
+
+  // Rehber bilgilerini al ve varsayılan değerler ata
+  const {
+    name = '',
+    surname = '',
+    nickname = '',
+    guideGroup = '',
+    companyName = ''
+  } = guideData;
 
   const menuItems = [
     {
@@ -33,10 +68,8 @@ export default function GuideController() {
   ];
 
   const handleLogout = () => {
-    // LocalStorage'dan token ve kullanıcı bilgilerini temizle
     localStorage.removeItem('guideToken');
-    localStorage.removeItem('guideUsername');
-    // Login sayfasına yönlendir
+    localStorage.removeItem('guideData'); // guideUsername yerine guideData'yı sil
     navigate('/guide-login');
   };
 
@@ -44,11 +77,23 @@ export default function GuideController() {
     <div className="container mt-5">
       {/* Header kısmı */}
       <div className="d-flex justify-content-between align-items-center mb-5">
-        <h1>Rehber Paneli</h1>
+        <div>
+          <h1>Rehber Paneli</h1>
+          <div className="text-muted">
+            <p className="mb-1">
+              <i className="bi bi-building me-2"></i>
+              {companyName}
+            </p>
+            <p className="mb-1">
+              <i className="bi bi-person-badge me-2"></i>
+              {nickname || name} {guideGroup && `- ${guideGroup}`}
+            </p>
+          </div>
+        </div>
         <div className="d-flex align-items-center">
           <span className="me-3">
             <i className="bi bi-person-circle me-2"></i>
-            {username}
+            {name} {surname}
           </span>
           <button 
             className="btn btn-outline-danger"

@@ -79,10 +79,15 @@ const TourForm = ({
         />
 
         <PriceInputs
-          adultPrice={tourData.adultPrice}
-          childPrice={tourData.childPrice}
+          value={{
+            adultPrice: tourData.adultPrice,
+            childPrice: tourData.childPrice,
+            guideAdultPrice: tourData.guideAdultPrice,
+            guideChildPrice: tourData.guideChildPrice
+          }}
           onChange={onChange}
         />
+        
 
         <OptionInput
           label="Opsiyonlar"

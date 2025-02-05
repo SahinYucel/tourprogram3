@@ -3,6 +3,8 @@ export const INITIAL_TOUR_STATE = {
   operator: '',
   adultPrice: '',
   childPrice: '',
+  guideAdultPrice: '', // Yeni eklenen
+  guideChildPrice: '', // Yeni eklenen
   selectedDays: [],
   pickupTimes: [{
     hour: '',

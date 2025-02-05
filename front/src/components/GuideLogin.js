@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import './styles/guide-dashboard-style.css';
+import './guide-components/styles/guide-dashboard-style.css';
 
 export default function GuideLogin() {
   const navigate = useNavigate();
@@ -43,16 +43,12 @@ export default function GuideLogin() {
         throw new Error(data.message || 'Giriş başarısız');
       }
 
-      // Login başarılı - localStorage'a detaylı bilgileri kaydet
-     
-
-      // Debug için localStorage'ı kontrol et
-      
-
+      // Login başarılı
+      localStorage.setItem('guideToken', data.token);
+      localStorage.setItem('guideData', JSON.stringify(data.data));
       navigate('/guide-dashboard');
 
     } catch (err) {
-      console.error('Login error:', err);
       setError(err.message || 'Giriş başarısız. Lütfen bilgilerinizi kontrol ediniz.');
     } finally {
       setIsLoading(false);

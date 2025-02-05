@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './styles/guide-dashboard-style.css';
+import { useNavigate } from 'react-router-dom';
 
 export default function Tours() {
   const [cart, setCart] = useState([]);
@@ -24,10 +25,11 @@ export default function Tours() {
       minute: ''
     },
     pax: {
-      adult: 0,
-      child: 0,
-      free: 0
-    }
+      adult: '',
+      child: '',
+      free: ''
+    },
+    paymentType: 'cash' // Varsayılan olarak cash seçili olsun
   });
 
   // Para birimleri ve sembolleri
@@ -64,6 +66,12 @@ export default function Tours() {
   // Düzenleme modu için state
   const [editingReservation, setEditingReservation] = useState(null);
 
+  // Saklanan sepetler için state ekleyelim
+  const [savedCarts, setSavedCarts] = useState(() => {
+    const saved = localStorage.getItem('savedCarts');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   // Tarihi Türkçe formatına çeviren fonksiyon
   const formatDate = (dateString) => {
     const options = { 
@@ -79,6 +87,31 @@ export default function Tours() {
     return `${time.hour}:${time.minute}`;
   };
 
+  const navigate = useNavigate();
+
+  // Guide verilerini localStorage'dan al
+  const guideData = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('guideData')) || {};
+    } catch (error) {
+      console.error('Guide data parse error:', error);
+      return {};
+    }
+  })();
+
+  // Region'u güvenli bir şekilde işle
+  const safeRegion = (() => {
+    const region = guideData.region;
+    if (!region) return [];
+    if (Array.isArray(region)) return region;
+    try {
+      const parsed = JSON.parse(region);
+      return Array.isArray(parsed) ? parsed : [parsed];
+    } catch (e) {
+      return typeof region === 'string' ? [region] : [];
+    }
+  })();
+
   const handleAddToCart = () => {
     if (!selectedTour || !customerInfo.name || !customerInfo.phone || !tourPrice) {
       alert('Lütfen gerekli alanları doldurunuz');
@@ -93,16 +126,11 @@ export default function Tours() {
       tourPrice: parseFloat(tourPrice),
       currency: currency,
       currencySymbol: currencies[currency],
-      totalPrice: calculateTotalPrice(parseFloat(tourPrice))
+      totalPrice: parseFloat(tourPrice)
     };
 
     setCart([...cart, cartItem]);
     resetForm();
-  };
-
-  const calculateTotalPrice = (basePrice) => {
-    return (basePrice * customerInfo.pax.adult) + 
-           (basePrice * 0.5 * customerInfo.pax.child);
   };
 
   const resetForm = () => {
@@ -121,7 +149,8 @@ export default function Tours() {
         hour: '',
         minute: ''
       },
-      pax: { adult: 0, child: 0, free: 0 }
+      pax: { adult: 0, child: 0, free: 0 },
+      paymentType: 'cash' // Varsayılan değeri resetleyelim
     });
   };
 
@@ -147,6 +176,44 @@ export default function Tours() {
     setCart([]);
   };
 
+  // Sepeti saklama fonksiyonunu güncelleyelim
+  const handleSaveCart = () => {
+    if (cart.length === 0) {
+      alert('Saklanacak sepet boş!');
+      return;
+    }
+
+    const cartToSave = {
+      id: Date.now(),
+      date: new Date().toLocaleDateString('tr-TR'),
+      items: [...cart]
+    };
+
+    const updatedSavedCarts = [...savedCarts, cartToSave];
+    setSavedCarts(updatedSavedCarts);
+    localStorage.setItem('savedCarts', JSON.stringify(updatedSavedCarts));
+    setCart([]); // mevcut sepeti temizle
+    alert('Sepet başarıyla kaydedildi!');
+  };
+
+  // Saklanan sepeti silme fonksiyonu
+  const handleDeleteSavedCart = (cartId) => {
+    if (window.confirm('Bu kaydedilmiş sepeti silmek istediğinize emin misiniz?')) {
+      const updatedSavedCarts = savedCarts.filter(cart => cart.id !== cartId);
+      setSavedCarts(updatedSavedCarts);
+      localStorage.setItem('savedCarts', JSON.stringify(updatedSavedCarts));
+    }
+  };
+
+  // Saklanan sepeti geri yükleme fonksiyonunu güncelleyelim
+  const handleLoadSavedCart = (savedCart) => {
+    setCart([...cart, ...savedCart.items]);
+    const updatedSavedCarts = savedCarts.filter(cart => cart.id !== savedCart.id);
+    setSavedCarts(updatedSavedCarts);
+    localStorage.setItem('savedCarts', JSON.stringify(updatedSavedCarts));
+    setShowSavedCarts(false);
+  };
+
   // Sepetteki öğeyi düzenleme fonksiyonu
   const handleEditCartItem = (item, index) => {
     setEditingReservation({ ...item, cartIndex: index }); // cartIndex ekledik
@@ -163,7 +230,8 @@ export default function Tours() {
       pickupHotel: item.pickupHotel,
       pickupDate: item.pickupDate,
       pickupTime: item.pickupTime,
-      pax: { ...item.pax }
+      pax: { ...item.pax },
+      paymentType: item.paymentType
     });
     // Sayfanın üstüne kaydır
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -181,7 +249,7 @@ export default function Tours() {
       tourPrice: parseFloat(tourPrice),
       currency: currency,
       currencySymbol: currencies[currency],
-      totalPrice: calculateTotalPrice(parseFloat(tourPrice))
+      totalPrice: parseFloat(tourPrice)
     };
 
     if ('cartIndex' in editingReservation) {
@@ -239,8 +307,55 @@ export default function Tours() {
     return minutes;
   };
 
+  // Modal state'ini ekleyelim
+  const [showCart, setShowCart] = useState(false);
+
+  // Saklanan sepetler modalı için state
+  const [showSavedCarts, setShowSavedCarts] = useState(false);
+
+  // Tamamlanan rezervasyonları sepete taşıma fonksiyonu ekleyelim
+  const handleMoveToCart = (index) => {
+    // Seçilen rezervasyonu al
+    const reservation = completedReservations[index];
+    
+    // Sepete ekle
+    setCart([...cart, reservation]);
+    
+    // Tamamlanan rezervasyonlardan kaldır
+    const updatedReservations = completedReservations.filter((_, i) => i !== index);
+    setCompletedReservations(updatedReservations);
+  };
+
   return (
     <div className="container mt-4">
+      {/* Dashboard'a Dönüş Butonu */}
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <button 
+          className="btn btn-outline-secondary"
+          onClick={() => navigate('/guide-dashboard')}
+        >
+          <i className="bi bi-arrow-left me-2"></i>
+          Dashboard'a Dön
+        </button>
+      </div>
+
+      <div className="row">
+        <div className="col">
+          <h2>Turlar</h2>
+          <div className="mb-4">
+            <h5>Çalışma Bölgeleri:</h5>
+            <div className="d-flex flex-wrap gap-2">
+              {safeRegion.map((region, index) => (
+                <span key={index} className="badge bg-primary">
+                  {region}
+                </span>
+              ))}
+            </div>
+          </div>
+          {/* Diğer tur içeriği buraya gelecek */}
+        </div>
+      </div>
+
       <div className="row">
         {/* Sol taraf - Form */}
         <div className="col-md-8">
@@ -481,6 +596,28 @@ export default function Tours() {
                   />
                 </div>
 
+                <div className="col-md-12">
+                  <label className="form-label">Ödeme Tipi</label>
+                  <div className="btn-group w-100">
+                    <button
+                      type="button"
+                      className={`btn ${customerInfo.paymentType === 'cash' ? 'btn-secondary' : 'btn-outline-secondary'}`}
+                      onClick={() => setCustomerInfo(prev => ({ ...prev, paymentType: 'cash' }))}
+                    >
+                      <i className="bi bi-cash me-2"></i>
+                      Nakit
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn ${customerInfo.paymentType === 'card' ? 'btn-secondary' : 'btn-outline-secondary'}`}
+                      onClick={() => setCustomerInfo(prev => ({ ...prev, paymentType: 'card' }))}
+                    >
+                      <i className="bi bi-credit-card me-2"></i>
+                      Kart
+                    </button>
+                  </div>
+                </div>
+
                 <div className="col-12">
                   <button 
                     className="btn btn-primary w-100"
@@ -496,67 +633,171 @@ export default function Tours() {
 
         {/* Sağ taraf - Sepet */}
         <div className="col-md-4">
-          <div className="card">
-            <div className="card-header">
-              <h5 className="mb-0">Sepet ({cart.length})</h5>
-            </div>
-            <div className="card-body">
-              {cart.length === 0 ? (
-                <p className="text-muted">Sepetiniz boş</p>
-              ) : (
-                cart.map((item, index) => (
-                  <div key={index} className="card mb-2">
-                    <div className="card-body">
-                      <h6>{item.tourName}</h6>
-                      <p className="mb-1">
-                        {item.name} - {item.phoneCode} {item.phone}
-                      </p>
-                      <p className="mb-1">
-                        Alınış: {item.pickupRegion} - {item.pickupArea}
-                        {item.pickupHotel && ` - ${item.pickupHotel}`}
-                      </p>
-                      <p className="mb-1">
-                        Alınış Tarihi: {formatDate(item.pickupDate)} {formatTime(item.pickupTime)}
-                      </p>
-                      <p className="mb-1">
-                        Pax: {item.pax.adult} yetişkin, {item.pax.child} çocuk, {item.pax.free} ücretsiz
-                      </p>
-                      <p className="mb-1">
-                        Birim Fiyat: {item.tourPrice} {item.currencySymbol}
-                      </p>
-                      <p className="mb-1">
-                        Toplam: {item.totalPrice} {item.currencySymbol}
-                      </p>
-                      <div className="btn-group">
-                        <button 
-                          className="btn btn-sm btn-primary"
-                          onClick={() => handleEditCartItem(item, index)}
-                        >
-                          <i className="bi bi-pencil"></i>
-                        </button>
-                        <button 
-                          className="btn btn-sm btn-danger"
-                          onClick={() => handleRemoveFromCart(index)}
-                        >
-                          <i className="bi bi-trash"></i>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-              {cart.length > 0 && (
-                <button 
-                  className="btn btn-success w-100 mt-3"
-                  onClick={handleCompleteReservation}
+          <div className="position-fixed" style={{ right: '20px', top: '20px', zIndex: 1030 }}>
+            <div className="dropdown">
+              <button 
+                className="btn btn-primary rounded-circle p-3 shadow"
+                onClick={() => setShowCart(true)}
+              >
+                <i className="bi bi-cart3 fs-4"></i>
+                {cart.length > 0 && (
+                  <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                    {cart.length}
+                  </span>
+                )}
+              </button>
+              {savedCarts.length > 0 && (
+                <button
+                  className="btn btn-secondary rounded-circle p-2 shadow position-absolute"
+                  style={{ top: '50px', right: '0' }}
+                  onClick={() => setShowSavedCarts(true)}
                 >
-                  Rezervasyonu Tamamla
+                  <i className="bi bi-folder fs-5"></i>
+                  <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary">
+                    {savedCarts.length}
+                  </span>
                 </button>
               )}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Sepet Modal */}
+      <div 
+        className={`modal fade ${showCart ? 'show' : ''}`} 
+        style={{ display: showCart ? 'block' : 'none' }}
+        tabIndex="-1"
+      >
+        <div className="modal-dialog modal-dialog-scrollable modal-lg">
+          <div className="modal-content">
+            <div className="modal-header bg-primary text-white">
+              <h5 className="modal-title">Sepet ({cart.length})</h5>
+              <button 
+                type="button" 
+                className="btn-close btn-close-white" 
+                onClick={() => setShowCart(false)}
+              ></button>
+            </div>
+            <div className="modal-body">
+              {cart.length === 0 ? (
+                <div className="text-center text-muted py-5">
+                  <i className="bi bi-cart3 fs-1"></i>
+                  <p className="mt-2">Sepetiniz boş</p>
+                </div>
+              ) : (
+                cart.map((item, index) => (
+                  <div key={index} className="card mb-3 border-0 shadow-sm">
+                    <div className="card-body p-3">
+                      <div className="d-flex justify-content-between align-items-start mb-2">
+                        <h6 className="fw-bold text-primary mb-0">{item.tourName}</h6>
+                        <div className="btn-group">
+                          <button 
+                            className="btn btn-sm btn-outline-primary"
+                            onClick={() => {
+                              handleEditCartItem(item, index);
+                              setShowCart(false);
+                            }}
+                          >
+                            <i className="bi bi-pencil"></i>
+                          </button>
+                          <button 
+                            className="btn btn-sm btn-outline-danger"
+                            onClick={() => handleRemoveFromCart(index)}
+                          >
+                            <i className="bi bi-trash"></i>
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div className="small">
+                        <div className="d-flex align-items-center mb-1">
+                          <i className="bi bi-person me-2"></i>
+                          <span>{item.name}</span>
+                        </div>
+                        
+                        <div className="d-flex align-items-center mb-1">
+                          <i className="bi bi-telephone me-2"></i>
+                          <span>{item.phoneCode} {item.phone}</span>
+                        </div>
+                        
+                        <div className="d-flex align-items-center mb-1">
+                          <i className="bi bi-geo-alt me-2"></i>
+                          <span>
+                            {item.pickupRegion} - {item.pickupArea}
+                            {item.pickupHotel && ` (${item.pickupHotel})`}
+                          </span>
+                        </div>
+                        
+                        <div className="d-flex align-items-center mb-1">
+                          <i className="bi bi-calendar-event me-2"></i>
+                          <span>{formatDate(item.pickupDate)} {formatTime(item.pickupTime)}</span>
+                        </div>
+                        
+                        <div className="d-flex align-items-center mb-2">
+                          <i className={`bi bi-${item.paymentType === 'cash' ? 'cash' : 'credit-card'} me-2`}></i>
+                          <span>
+                            {item.paymentType === 'cash' ? 'Nakit' : 'Kart'} Ödeme
+                          </span>
+                        </div>
+                        
+                        <div className="d-flex align-items-center mb-2">
+                          <i className="bi bi-people me-2"></i>
+                          <span>
+                            {item.pax.adult} yetişkin
+                            {item.pax.child > 0 && `, ${item.pax.child} çocuk`}
+                            {item.pax.free > 0 && `, ${item.pax.free} ücretsiz`}
+                          </span>
+                        </div>
+                        
+                        <div className="d-flex justify-content-between align-items-center pt-2 border-top">
+                          <span className="fw-bold">
+                            Toplam: {item.totalPrice} {item.currencySymbol}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            {cart.length > 0 && (
+              <div className="modal-footer">
+                <div className="d-flex w-100 justify-content-between align-items-center">
+                  <div>
+                    <span className="text-muted me-3">Toplam Rezervasyon: {cart.length} adet</span>
+                    <button 
+                      className="btn btn-info"
+                      onClick={handleSaveCart}
+                    >
+                      <i className="bi bi-save me-2"></i>
+                      Sepeti Sakla
+                    </button>
+                  </div>
+                  <button 
+                    className="btn btn-success"
+                    onClick={() => {
+                      handleCompleteReservation();
+                      setShowCart(false);
+                    }}
+                  >
+                    <i className="bi bi-check2-circle me-2"></i>
+                    Rezervasyonu Tamamla
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Modal Backdrop */}
+      {showCart && (
+        <div 
+          className="modal-backdrop fade show" 
+          onClick={() => setShowCart(false)}
+        ></div>
+      )}
 
       {/* Tamamlanan Rezervasyonlar Tablosu */}
       {completedReservations.length > 0 && (
@@ -576,6 +817,7 @@ export default function Tours() {
                       <th>Alınış Bilgileri</th>
                       <th>Pax</th>
                       <th>Fiyat</th>
+                      <th>Ödeme</th>
                       <th>İşlemler</th>
                     </tr>
                   </thead>
@@ -600,20 +842,34 @@ export default function Tours() {
                           <div>Ücretsiz: {reservation.pax.free}</div>
                         </td>
                         <td>
-                          <div>Birim: {reservation.tourPrice} {reservation.currencySymbol}</div>
                           <div>Toplam: {reservation.totalPrice} {reservation.currencySymbol}</div>
+                        </td>
+                        <td>
+                          <div className="d-flex align-items-center">
+                            <i className={`bi bi-${reservation.paymentType === 'cash' ? 'cash' : 'credit-card'} me-2`}></i>
+                            {reservation.paymentType === 'cash' ? 'Nakit' : 'Kart'}
+                          </div>
                         </td>
                         <td>
                           <div className="btn-group">
                             <button
+                              className="btn btn-sm btn-success"
+                              onClick={() => handleMoveToCart(index)}
+                              title="Sepete Taşı"
+                            >
+                              <i className="bi bi-cart-plus"></i>
+                            </button>
+                            <button
                               className="btn btn-sm btn-primary"
                               onClick={() => handleEditCartItem(reservation, index)}
+                              title="Düzenle"
                             >
                               <i className="bi bi-pencil"></i>
                             </button>
                             <button
                               className="btn btn-sm btn-danger"
                               onClick={() => handleDeleteReservation(index)}
+                              title="Sil"
                             >
                               <i className="bi bi-trash"></i>
                             </button>
@@ -638,6 +894,91 @@ export default function Tours() {
             </button>
           </div>
         </>
+      )}
+
+      {/* Saklanan Sepetler Modalı */}
+      <div 
+        className={`modal fade ${showSavedCarts ? 'show' : ''}`} 
+        style={{ 
+          display: showSavedCarts ? 'block' : 'none', 
+          zIndex: 1090  // z-index değerini daha da yükseltelim
+        }}
+        tabIndex="-1"
+      >
+        <div className="modal-dialog modal-dialog-scrollable">
+          <div className="modal-content">
+            <div className="modal-header bg-secondary text-white">
+              <h5 className="modal-title">
+                <i className="bi bi-folder me-2"></i>
+                Saklanan Sepetler ({savedCarts.length})
+              </h5>
+              <button 
+                type="button" 
+                className="btn-close btn-close-white" 
+                onClick={() => setShowSavedCarts(false)}
+              ></button>
+            </div>
+            <div className="modal-body">
+              {savedCarts.length === 0 ? (
+                <div className="text-center text-muted py-5">
+                  <i className="bi bi-folder fs-1"></i>
+                  <p className="mt-2">Kaydedilmiş sepet bulunmamaktadır</p>
+                </div>
+              ) : (
+                savedCarts.map((savedCart) => (
+                  <div key={savedCart.id} className="card mb-3 border-0 shadow-sm">
+                    <div className="card-body">
+                      <div className="d-flex justify-content-between align-items-center mb-2">
+                        <h6 className="mb-0">
+                          <i className="bi bi-calendar-event me-2"></i>
+                          {savedCart.date}
+                        </h6>
+                        <span className="badge bg-primary">{savedCart.items.length} Rezervasyon</span>
+                      </div>
+                      <div className="small mb-2">
+                        {/* Sepet içeriğini özet olarak gösterelim */}
+                        {savedCart.items.map((item, idx) => (
+                          <div key={idx} className="text-muted">
+                            • {item.tourName} - {item.name}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="btn-group w-100">
+                        <button 
+                          className="btn btn-sm btn-outline-primary"
+                          onClick={() => handleLoadSavedCart(savedCart)}
+                        >
+                          <i className="bi bi-arrow-clockwise me-2"></i>
+                          Sepete Yükle
+                        </button>
+                        <button 
+                          className="btn btn-sm btn-outline-danger"
+                          onClick={() => handleDeleteSavedCart(savedCart.id)}
+                        >
+                          <i className="bi bi-trash me-2"></i>
+                          Sil
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Saklanan Sepetler Modal Backdrop */}
+      {showSavedCarts && (
+        <div 
+          className="modal-backdrop fade show" 
+          style={{ 
+            zIndex: 1085,
+            opacity: '0.5',  // Arka planı biraz daha şeffaf yapalım
+            backgroundColor: '#000'
+          }}
+          onClick={() => setShowSavedCarts(false)}
+        ></div>
       )}
     </div>
   );

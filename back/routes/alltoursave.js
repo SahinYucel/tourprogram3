@@ -38,8 +38,9 @@ module.exports = (db) => {
 
         const insertQuery = `INSERT INTO tours (
           company_ref, tour_name, operator, operator_id, 
-          adult_price, child_price, is_active, priority
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+          adult_price, child_price, guide_adult_price, guide_child_price, 
+          is_active, priority
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
         const insertValues = [
           mainTour.company_ref,
@@ -48,6 +49,8 @@ module.exports = (db) => {
           mainTour.operator_id,
           parseFloat(mainTour.adult_price) || 0,
           parseFloat(mainTour.child_price) || 0,
+          parseFloat(mainTour.guide_adult_price) || 0,
+          parseFloat(mainTour.guide_child_price) || 0,
           mainTour.is_active === false ? 0 : 1,
           parseInt(mainTour.priority) || 0
         ];
@@ -185,8 +188,8 @@ module.exports = (db) => {
       const [tours] = await connection.query(
         `SELECT 
           id, company_ref, tour_name, operator, operator_id, 
-          adult_price, child_price, is_active, 
-          COALESCE(priority, 0) as priority 
+          adult_price, child_price, guide_adult_price, guide_child_price,
+          is_active, COALESCE(priority, 0) as priority 
          FROM tours WHERE company_ref = ?`,
         [companyRef]
       );
@@ -245,6 +248,8 @@ module.exports = (db) => {
           operator_id: tour.operator_id,
           adult_price: tour.adult_price,
           child_price: tour.child_price,
+          guide_adult_price: tour.guide_adult_price,
+          guide_child_price: tour.guide_child_price,
           is_active: tour.is_active === 1,
           priority: parseInt(tour.priority) || 0,
           bolgeler: regions.map(r => r.region_name)
