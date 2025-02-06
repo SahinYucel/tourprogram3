@@ -13,7 +13,6 @@ export default function GuideLogin() {
     e.preventDefault();
     
     try {
-      console.log('Sending login request with:', { name, password });
       
       const response = await axios.post('http://localhost:5000/guide-login', {
         name,

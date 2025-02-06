@@ -86,6 +86,7 @@ const providerDataRoutes = require('./routes/providerData')(db);
 const guideDataRoutes = require('./routes/guideData')(db);
 const safeDataRouter = require('./routes/safeData')(db);
 const guideLoginRouter = require('./routes/guideLogin')(db);
+const toursRouter = require('./routes/guidegetTours')(db);
 
 // Route middlewares
 app.use('/auth', authRoutes);
@@ -100,6 +101,8 @@ app.use('/provider-data', providerDataRoutes);
 app.use('/guide-data', guideDataRoutes);
 app.use('/safe-data', safeDataRouter);
 app.use('/guide-login', guideLoginRouter);
+app.use('/guidegetTours', toursRouter);
+
 
 const PORT = 5000; 
 app.listen(PORT, () => {

@@ -13,6 +13,8 @@ const api = axios.create({
     withCredentials: true // CORS için gerekli
 });
 
+
+
 // Auth endpoints
 export const login = (credentials) => api.post('/auth/login', credentials);
 export const register = (userData) => api.post('/auth/register', userData);
@@ -179,5 +181,10 @@ export const deleteSafe = async (safeId) => {
     throw new Error('Kasa silinemedi: ' + error.message);
   }
 };
+
+
+// Guidelar için API fonksiyonları
+export const guideAPI = { getTours: () => api.get('/guidegetTours'),};
+
 
 export default api;

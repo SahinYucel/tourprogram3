@@ -111,11 +111,7 @@ module.exports = (db) => {
           parsedRegion = [];
         }
 
-        console.log('Region parsing:', {
-          original: regionData,
-          parsed: parsedRegion,
-          type: typeof regionData
-        });
+      
 
       } catch (e) {
         console.warn('Region parse error:', e);

@@ -98,16 +98,7 @@ export default function GuideController() {
       <div className="d-flex justify-content-between align-items-center mb-5">
         <div>
           <h1>Rehber Paneli</h1>
-          <div className="text-muted">
-            <p className="mb-1">
-              <i className="bi bi-building me-2"></i>
-              {companyName}
-            </p>
-            <p className="mb-1">
-              <i className="bi bi-person-badge me-2"></i>
-              {nickname || name} {guideGroup && `- ${guideGroup}`}
-            </p>
-          </div>
+          
         </div>
         <div className="d-flex align-items-center">
           <span className="me-3">
