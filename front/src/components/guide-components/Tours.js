@@ -12,7 +12,7 @@ export default function Tours() {
   const [cart, setCart] = useState([]);
   const [selectedTour, setSelectedTour] = useState('');
   const [tourPrice, setTourPrice] = useState('');
-  const [currency, setCurrency] = useState('TRY');
+  const [currency, setCurrency] = useState('GBP');
 
   // Bugünün tarihini YYYY-MM-DD formatında alalım
   const today = new Date().toISOString().split('T')[0];
@@ -34,15 +34,17 @@ export default function Tours() {
       child: '',
       free: ''
     },
-    paymentType: 'cash' // Varsayılan olarak cash seçili olsun
+    paymentType: 'cash',
+    selectedDay: null,
+    period: ''
   });
 
-  // Para birimleri ve sembolleri
+  // Para birimleri ve sembolleri - GBP'yi en başa alalım
   const currencies = {
-    TRY: '₺',
-    USD: '$',
+    GBP: '£',
     EUR: '€',
-    GBP: '£'
+    USD: '$',
+    TRY: '₺'
   };
 
   // Turlar için loading ve error state'leri ekleyelim
@@ -60,11 +62,22 @@ export default function Tours() {
         setError(null);
         
         const response = await guideAPI.getTours();
-        console.log('Çekilen turlar:', response.data);
-        setAvailableTours(response.data);
+        console.log('API response:', response); // Debug için
+
+        // API'den gelen veriyi kontrol et
+        if (response?.data?.data) {
+          const toursData = response.data.data;
+          console.log('Tours data:', toursData); // Debug için
+          setAvailableTours(toursData);
+        } else {
+          console.error('Invalid API response:', response);
+          setError('Turlar yüklenirken bir hata oluştu: Geçersiz API yanıtı');
+          setAvailableTours([]); // Boş array ile başlat
+        }
       } catch (err) {
         console.error('Error fetching tours:', err);
         setError('Turlar yüklenirken bir hata oluştu.');
+        setAvailableTours([]); // Hata durumunda boş array
       } finally {
         setIsLoading(false);
       }
@@ -182,16 +195,19 @@ export default function Tours() {
     }
 
     const tour = availableTours.find(t => t.id === parseInt(selectedTour));
+    console.log('Selected tour:', tour); // Debug için tur verisini görelim
+
     const cartItem = {
       ...customerInfo,
       tourId: selectedTour,
-      tourName: tour.tour_name,
+      tourName: tour.tour_name || tour.name || tour.tourName, // Tüm olası alanları kontrol edelim
       tourPrice: parseFloat(tourPrice),
       currency: currency,
       currencySymbol: currencies[currency],
       totalPrice: parseFloat(tourPrice)
     };
 
+    console.log('Cart item:', cartItem); // Debug için sepet öğesini görelim
     setCart([...cart, cartItem]);
     resetForm();
   };
@@ -199,7 +215,7 @@ export default function Tours() {
   const resetForm = () => {
     setSelectedTour('');
     setTourPrice('');
-    setCurrency('TRY');
+    setCurrency('GBP');
     setCustomerInfo({
       name: '',
       phoneCode: '+44',
@@ -213,7 +229,9 @@ export default function Tours() {
         minute: ''
       },
       pax: { adult: '', child: '', free: '' },
-      paymentType: 'cash' // Varsayılan değeri resetleyelim
+      paymentType: 'cash',
+      selectedDay: null,
+      period: ''
     });
   };
 
@@ -284,7 +302,9 @@ export default function Tours() {
       pickupDate: item.pickupDate,
       pickupTime: item.pickupTime,
       pax: { ...item.pax },
-      paymentType: item.paymentType
+      paymentType: item.paymentType,
+      selectedDay: null,
+      period: ''
     });
     // Sayfanın üstüne kaydır
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -440,7 +460,7 @@ export default function Tours() {
         isLoading={isLoading}
         error={error}
         selectedTour={selectedTour}
-        availableTours={availableTours}
+        availableTours={availableTours || []}
         tourPrice={tourPrice}
         currency={currency}
         customerInfo={customerInfo}
@@ -449,14 +469,23 @@ export default function Tours() {
         countryCodes={countryCodes}
         onTourSelect={(e) => {
           setSelectedTour(e.target.value);
-          const selected = availableTours.find(t => t.id === parseInt(e.target.value));
+          const selected = availableTours?.find(t => t.id === parseInt(e.target.value));
           if (selected?.default_price) {
             setTourPrice(selected.default_price.toString());
           }
         }}
         onTourPriceChange={(e) => setTourPrice(e.target.value)}
         onCurrencyChange={(e) => setCurrency(e.target.value)}
-        onCustomerInfoChange={(updates) => setCustomerInfo(prev => ({...prev, ...updates}))}
+        onCustomerInfoChange={(updates) => {
+          setCustomerInfo(prev => {
+            // Eğer değişiklik yoksa state'i güncelleme
+            const newState = { ...prev, ...updates };
+            if (JSON.stringify(prev) === JSON.stringify(newState)) {
+              return prev;
+            }
+            return newState;
+          });
+        }}
         onSubmit={handleAddToCart}
         editingReservation={editingReservation}
         onUpdate={handleUpdateReservation}

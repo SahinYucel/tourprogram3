@@ -148,10 +148,25 @@ export const saveGuides = async (companyId, guides) => {
   return response.data;
 };
 
-export const getGuides = async (companyId) => {  const response = await api.get(`/guide-data/${companyId}`);  return response.data;
+export const getGuides = async (companyId) => {
+  try {
+    const response = await api.get(`/guide-data/${companyId}`);
+    return response.data;
+  } catch (error) {
+    console.error('getGuides error:', error);
+    throw new Error('Rehberler getirilemedi: ' + error.message);
+  }
 };
 
-export const deleteGuide = async (guideId) => {  const response = await api.delete(`/guide-data/${guideId}`);  return response.data;
+// Guide login endpoint
+export const guideLogin = async (credentials) => {
+  try {
+    const response = await api.post('/guide-login', credentials);
+    return response.data;
+  } catch (error) {
+    console.error('Guide login error:', error);
+    throw error;
+  }
 };
 
 // Safe endpoints
@@ -184,7 +199,23 @@ export const deleteSafe = async (safeId) => {
 
 
 // Guidelar için API fonksiyonları
-export const guideAPI = { getTours: () => api.get('/guidegetTours'),};
+export const guideAPI = { 
+  getTours: async () => {
+    try {
+      // LocalStorage'dan guide verilerini al
+      const guideData = JSON.parse(localStorage.getItem('guideData'));
+      if (!guideData?.id) {
+        throw new Error('Rehber bilgisi bulunamadı');
+      }
+
+      const response = await api.get(`/guidegetTours?guideId=${guideData.id}`);
+      return response;
+    } catch (error) {
+      console.error('Error in getTours:', error);
+      throw error;
+    }
+  }
+};
 
 
 export default api;

@@ -16,32 +16,28 @@ module.exports = (db) => {
   router.post('/', async (req, res) => {
     const { name, password } = req.body;
 
-    // Debug için gelen verileri logla
-    console.log('Login attempt:', { name, password });
+    console.log('Login attempt:', { name, password }); // Debug için
 
     try {
-      // SQL sorgusunu güncelle
       const sql = `
         SELECT 
           g.*,
           c.company_name,
-          g.region as guide_region,
+          GROUP_CONCAT(gr.region_name) as regions,
           g.guide_group,
-          g.nickname,
-          JSON_UNQUOTE(g.region) as region_text  /* JSON_UNQUOTE ile region'u al */
+          g.nickname
         FROM agencyguide g
         JOIN companyusers c ON g.company_id = c.id
+        LEFT JOIN guide_regions gr ON g.id = gr.guide_id
         WHERE LOWER(g.name) = LOWER(?)
+        GROUP BY g.id
       `;
-      
-      // SQL sorgusunu logla
-      console.log('SQL Query:', sql);
-      console.log('Query params:', [name]);
+
+      console.log('Executing SQL:', sql); // SQL sorgusunu logla
+      console.log('Query params:', [name]); // Parametreleri logla
 
       const guides = await query(sql, [name]);
-
-      // Bulunan rehberleri logla
-      console.log('Found guides:', guides);
+      console.log('Found guides:', guides); // Bulunan rehberleri logla
 
       if (guides.length === 0) {
         return res.status(401).json({
@@ -51,9 +47,7 @@ module.exports = (db) => {
       }
 
       const guide = guides[0];
-
-      // Debug için rehber bilgilerini logla
-      console.log('Guide data:', {
+      console.log('Guide data:', { // Rehber verilerini logla
         id: guide.id,
         name: guide.name,
         password_in_db: guide.sifre,
@@ -62,6 +56,10 @@ module.exports = (db) => {
 
       // Şifre kontrolü
       if (!guide.sifre || guide.sifre !== password) {
+        console.log('Password mismatch:', { // Şifre uyuşmazlığını logla
+          provided: password,
+          stored: guide.sifre
+        });
         return res.status(401).json({
           success: false,
           message: 'Şifre hatalı'
@@ -85,40 +83,13 @@ module.exports = (db) => {
       `;
       
       const settings = await query(settingsSql, [guide.id]);
+      console.log('Guide settings:', settings); // Ayarları logla
 
-      // Token oluştur
-      const token = 'dummy-token-' + Math.random().toString(36).substring(7);
+      // Bölgeleri array'e dönüştür
+      const regions = guide.regions ? guide.regions.split(',') : [];
+      console.log('Guide regions:', regions); // Bölgeleri logla
 
-      // Region'u parse et
-      let parsedRegion = [];
-      try {
-        // Region verisini parse et
-        const regionData = guide.region_text || guide.guide_region;
-        
-        if (regionData) {
-          // Eğer string ise ve köşeli parantezle başlıyorsa JSON parse et
-          if (typeof regionData === 'string' && regionData.trim().startsWith('[')) {
-            parsedRegion = JSON.parse(regionData);
-          } 
-          // Değilse direkt string olarak al
-          else if (typeof regionData === 'string') {
-            parsedRegion = [regionData];
-          }
-        }
-
-        // Array kontrolü yap
-        if (!Array.isArray(parsedRegion)) {
-          parsedRegion = [];
-        }
-
-      
-
-      } catch (e) {
-        console.warn('Region parse error:', e);
-        parsedRegion = [];
-      }
-
-      // Response objesini güncelle
+      // Response objesi
       const response = {
         success: true,
         data: {
@@ -128,7 +99,7 @@ module.exports = (db) => {
           code: guide.code,
           companyId: guide.company_id,
           companyName: guide.company_name,
-          region: parsedRegion,
+          region: regions,
           guideGroup: guide.guide_group || '',
           nickname: guide.nickname || 'Guide',
           settings: settings.length > 0 ? {
@@ -141,38 +112,20 @@ module.exports = (db) => {
               free: settings[0].pax_free
             }
           } : null
-        },
-        token
+        }
       };
 
-      // Debug için response'u logla
-      console.log('Success response:', response);
-
-      // Debug için detaylı loglama
-      console.log('\n=== GUIDE LOGIN RESPONSE ===');
-      console.log('Raw guide data:', {
-        ...guide,
-        region_text: guide.region_text,
-        guide_region: guide.guide_region,
-        original_region: guide.region
-      });
-      console.log('\nParsed Region:', {
-        raw_text: guide.region_text,
-        raw_region: guide.guide_region,
-        parsed: parsedRegion,
-        type: typeof guide.region_text
-      });
-      console.log('\nFinal Response:', JSON.stringify(response, null, 2));
-      console.log('===========================\n');
-
+      console.log('Response:', response); // Response'u logla
       res.json(response);
 
     } catch (error) {
       console.error('Guide login error:', error);
+      console.error('Error stack:', error.stack); // Stack trace'i logla
       res.status(500).json({
         success: false,
         message: 'Giriş işlemi sırasında bir hata oluştu',
-        error: error.message
+        error: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
     }
   });

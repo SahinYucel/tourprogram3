@@ -85,6 +85,7 @@ export default function Guides() {
       try {
         const loadedGuides = await getGuides(companyId);
         console.log('Yüklenen rehberler:', loadedGuides);
+        
         if (Array.isArray(loadedGuides)) {
           setGuides(loadedGuides);
         } else {

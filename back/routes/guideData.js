@@ -40,6 +40,7 @@ module.exports = (db) => {
       try {
         // Önce bu şirkete ait tüm rehberleri ve ayarları sil
         await query('DELETE FROM agency_guide_settings WHERE guide_id IN (SELECT id FROM agencyguide WHERE company_id = ?)', [companyId]);
+        await query('DELETE FROM guide_regions WHERE guide_id IN (SELECT id FROM agencyguide WHERE company_id = ?)', [companyId]);
         await query('DELETE FROM agencyguide WHERE company_id = ?', [companyId]);
 
         // Her rehberi tek tek ekle ve ayarlarını kaydet
@@ -55,17 +56,16 @@ module.exports = (db) => {
           // Rehberi ekle
           const insertGuideSql = `
             INSERT INTO agencyguide (
-              name, surname, is_active, region, guide_group,
+              name, surname, is_active, guide_group,
               nickname, languages, other_languages, phone, code, sifre,
               company_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `;
 
           const guideResult = await query(insertGuideSql, [
             guide.name,
             guide.surname, 
             guide.isActive ? 1 : 0,
-            Array.isArray(guide.region) ? JSON.stringify(guide.region) : '[]',
             guide.guideGroup,
             guide.nickname,
             typeof guide.languages === 'object' ? JSON.stringify(guide.languages) : '{}',
@@ -76,7 +76,7 @@ module.exports = (db) => {
             companyId
           ]);
 
-          console.log('Rehber kaydedildi, ID:', guideResult.insertId);
+          const guideId = guideResult.insertId;
 
           // Rehber ayarlarını kaydet
           const insertSettingsSql = `
@@ -87,7 +87,7 @@ module.exports = (db) => {
           `;
 
           await query(insertSettingsSql, [
-            guideResult.insertId,
+            guideId,
             parseFloat(guide.earnings) || 0,
             parseFloat(guide.promotionRate) || 0,
             parseFloat(guide.revenue) || 0,
@@ -96,6 +96,17 @@ module.exports = (db) => {
             parseInt(guide.pax?.free) || 0
           ]);
 
+          // Insert guide regions
+          if (Array.isArray(guide.region) && guide.region.length > 0) {
+            const insertRegionsSql = `
+              INSERT INTO guide_regions (guide_id, region_name)
+              VALUES ?
+            `;
+            const regionValues = guide.region.map(region => [guideId, region]);
+            await query(insertRegionsSql, [regionValues]);
+          }
+
+          console.log('Rehber kaydedildi, ID:', guideResult.insertId);
           console.log('Ayarlar kaydedildi, guide_id:', guideResult.insertId);
         }
 
@@ -127,119 +138,96 @@ module.exports = (db) => {
     const { companyId } = req.params;
 
     try {
-      console.log('Rehberler getiriliyor, companyId:', companyId);
-
-      // Önce rehberleri al
+      // Ana rehber sorgusu
       const guideSql = `
         SELECT 
-          ag.*,
-          CONCAT(
-            CASE 
-              WHEN ag.languages IS NOT NULL AND ag.languages != '{}'
-              THEN (
-                SELECT GROUP_CONCAT(
-                  CASE 
-                    WHEN JSON_EXTRACT(ag.languages, CONCAT('$.', lang)) = true 
-                    THEN CONCAT(UPPER(LEFT(lang, 1)), LOWER(SUBSTRING(lang, 2)))
-                  END
-                )
-                FROM JSON_TABLE(
-                  '[\"almanca\",\"rusca\",\"ingilizce\",\"fransizca\",\"arapca\"]',
-                  '$[*]' COLUMNS (lang VARCHAR(50) PATH '$')
-                ) langs
-              )
-              ELSE ''
-            END,
-            CASE 
-              WHEN ag.other_languages != '' 
-              THEN CONCAT(IF(JSON_EXTRACT(ag.languages, '$.*') IS NOT NULL, ', ', ''), ag.other_languages)
-              ELSE ''
-            END
-          ) as languagesDisplay
+          ag.id,
+          ag.name,
+          ag.surname,
+          ag.is_active,
+          ag.guide_group,
+          ag.nickname,
+          ag.languages,
+          ag.other_languages,
+          ag.phone,
+          ag.code,
+          ag.sifre as guide_password,
+          GROUP_CONCAT(DISTINCT gr.region_name) as regions,
+          ags.earnings,
+          ags.promotion_rate as promotionRate,
+          ags.revenue,
+          ags.pax_adult,
+          ags.pax_child,
+          ags.pax_free
         FROM agencyguide ag 
+        LEFT JOIN guide_regions gr ON ag.id = gr.guide_id
+        LEFT JOIN agency_guide_settings ags ON ag.id = ags.guide_id
         WHERE ag.company_id = ?
+        GROUP BY ag.id
       `;
       
       const guides = await query(guideSql, [companyId]);
-      console.log('Raw guides from DB:', guides);
-
+      
       if (!guides || !Array.isArray(guides)) {
         return res.json([]);
       }
 
-      // Her rehber için ayarları al
-      const formattedGuides = await Promise.all(guides.map(async (guide) => {
+      // Rehber verilerini formatla
+      const formattedGuides = guides.map(guide => {
+        // Dil bilgilerini güvenli bir şekilde parse et
+        let languages = {};
         try {
-          const settingsSql = `
-            SELECT earnings, promotion_rate as promotionRate, revenue,
-                   pax_adult, pax_child, pax_free
-            FROM agency_guide_settings 
-            WHERE guide_id = ?
-          `;
-          
-          const settings = await query(settingsSql, [guide.id]);
-          const guideSettings = settings[0] || {};
-
-          // JSON alanlarını parse et
-          let parsedRegion = [];
-          let parsedLanguages = {};
-          
-          try {
-            parsedRegion = guide.region ? JSON.parse(guide.region) : [];
-          } catch (e) {
-            console.error('Region parse error:', e);
-            parsedRegion = Array.isArray(guide.region) ? guide.region : [];
+          if (guide.languages && typeof guide.languages === 'string') {
+            languages = JSON.parse(guide.languages);
+          } else if (typeof guide.languages === 'object') {
+            languages = guide.languages;
           }
-
-          try {
-            parsedLanguages = guide.languages ? JSON.parse(guide.languages) : {};
-          } catch (e) {
-            console.error('Languages parse error:', e);
-            parsedLanguages = typeof guide.languages === 'object' ? guide.languages : {};
-          }
-
-          return {
-            id: guide.id,
-            name: guide.name,
-            surname: guide.surname,
-            isActive: guide.is_active === 1,
-            region: parsedRegion,
-            guideGroup: guide.guide_group,
-            nickname: guide.nickname,
-            languages: parsedLanguages,
-            languagesDisplay: guide.languagesDisplay,
-            otherLanguages: guide.other_languages,
-            phone: guide.phone,
-            code: guide.code,
-            guide_password: guide.sifre,
-            earnings: guideSettings.earnings || 0,
-            promotionRate: guideSettings.promotionRate || 0,
-            revenue: guideSettings.revenue || 0,
-            pax: {
-              adult: guideSettings.pax_adult || 0,
-              child: guideSettings.pax_child || 0,
-              free: guideSettings.pax_free || 0
-            }
-          };
         } catch (error) {
-          console.error('Error formatting guide:', guide.id, error);
-          console.error('Problematic guide data:', guide);
-          return null;
+          console.error('Languages parse error:', error);
+          languages = {};
         }
-      }));
 
-      // Null değerleri filtrele
-      const validGuides = formattedGuides.filter(guide => guide !== null);
-      console.log('Formatted guides:', validGuides);
+        // Seçili dilleri formatla
+        const selectedLanguages = Object.entries(languages)
+          .filter(([_, isSelected]) => isSelected)
+          .map(([lang]) => lang.charAt(0).toUpperCase() + lang.slice(1));
+        
+        if (guide.other_languages) {
+          selectedLanguages.push(guide.other_languages);
+        }
 
-      res.json(validGuides);
+        return {
+          id: guide.id,
+          name: guide.name,
+          surname: guide.surname,
+          isActive: guide.is_active === 1,
+          region: guide.regions ? guide.regions.split(',') : [],
+          guideGroup: guide.guide_group,
+          nickname: guide.nickname,
+          languages: languages,
+          languagesDisplay: selectedLanguages.join(', '),
+          otherLanguages: guide.other_languages,
+          phone: guide.phone,
+          code: guide.code,
+          guide_password: guide.guide_password,
+          earnings: parseFloat(guide.earnings) || 0,
+          promotionRate: parseFloat(guide.promotionRate) || 0,
+          revenue: parseFloat(guide.revenue) || 0,
+          pax: {
+            adult: parseInt(guide.pax_adult) || 0,
+            child: parseInt(guide.pax_child) || 0,
+            free: parseInt(guide.pax_free) || 0
+          }
+        };
+      });
+
+      res.json(formattedGuides);
 
     } catch (error) {
       console.error('Rehber getirme hatası:', error);
       res.status(500).json({ 
         error: 'Rehberler getirilemedi',
-        details: error.message,
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        details: error.message
       });
     }
   });

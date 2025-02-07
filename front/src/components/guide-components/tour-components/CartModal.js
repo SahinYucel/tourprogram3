@@ -11,6 +11,13 @@ const CartModal = ({
   formatDate,
   formatTime
 }) => {
+
+  // Düzenleme işlemi için yeni fonksiyon
+  const handleEdit = (item, index) => {
+    onEditItem(item, index);
+    onClose(); // Modalı kapat
+  };
+
   return (
     <>
       <div 
@@ -35,86 +42,84 @@ const CartModal = ({
                   <p className="mt-2">Sepetiniz boş</p>
                 </div>
               ) : (
-                cart.map((item, index) => (
-                  <div key={index} className="card mb-3 border-0 shadow-sm">
-                    <div className="card-body p-3">
-                      <div className="d-flex justify-content-between align-items-start mb-2">
-                        <h6 className="fw-bold text-primary mb-0">{item.tourName}</h6>
-                        <div className="btn-group">
+                <div className="table-responsive">
+                  {cart.map((item, index) => (
+                    <div key={index} className="card mb-3">
+                      <div className="card-body p-3">
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                          <h6 className="card-title mb-0">
+                            {index + 1}. {item.tourName}
+                          </h6>
+                          <span className="badge bg-primary">
+                            {item.tourPrice} {item.currencySymbol}
+                          </span>
+                        </div>
+                        
+                        <div className="row g-2">
+                          <div className="col-12 col-sm-6">
+                            <small className="text-muted d-block">Müşteri:</small>
+                            <div>{item.name}</div>
+                            <div className="small text-muted">
+                              {item.phoneCode} {item.phone}
+                            </div>
+                          </div>
+                          
+                          <div className="col-12 col-sm-6">
+                            <small className="text-muted d-block">Transfer:</small>
+                            <div>{item.pickupRegion} - {item.pickupArea}</div>
+                            {item.pickupHotel && (
+                              <div className="small text-muted">{item.pickupHotel}</div>
+                            )}
+                          </div>
+                          
+                          <div className="col-12 col-sm-6">
+                            <small className="text-muted d-block">Tarih/Saat:</small>
+                            <div>{formatDate(item.pickupDate)}</div>
+                            <div className="small text-muted">
+                              {formatTime(item.pickupTime)}
+                            </div>
+                          </div>
+                          
+                          <div className="col-12 col-sm-6">
+                            <small className="text-muted d-block">Kişi Sayısı:</small>
+                            <div>
+                              Yetişkin: {item.pax.adult || 0}
+                              {item.pax.child > 0 && `, Çocuk: ${item.pax.child}`}
+                              {item.pax.free > 0 && `, Ücretsiz: ${item.pax.free}`}
+                            </div>
+                            <div className="small text-muted">
+                              {item.paymentType === 'cash' ? 'Nakit' : 'Kart'}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="d-flex justify-content-end gap-2 mt-3">
                           <button 
                             className="btn btn-sm btn-outline-primary"
-                            onClick={() => {
-                              onEditItem(item, index);
-                              onClose();
-                            }}
+                            onClick={() => handleEdit(item, index)}
                           >
-                            <i className="bi bi-pencil"></i>
+                            <i className="bi bi-pencil me-1"></i>
+                            Düzenle
                           </button>
                           <button 
                             className="btn btn-sm btn-outline-danger"
                             onClick={() => onRemoveItem(index)}
                           >
-                            <i className="bi bi-trash"></i>
+                            <i className="bi bi-trash me-1"></i>
+                            Sil
                           </button>
                         </div>
                       </div>
-                      
-                      <div className="small">
-                        <div className="d-flex align-items-center mb-1">
-                          <i className="bi bi-person me-2"></i>
-                          <span>{item.name}</span>
-                        </div>
-                        
-                        <div className="d-flex align-items-center mb-1">
-                          <i className="bi bi-telephone me-2"></i>
-                          <span>{item.phoneCode} {item.phone}</span>
-                        </div>
-                        
-                        <div className="d-flex align-items-center mb-1">
-                          <i className="bi bi-geo-alt me-2"></i>
-                          <span>
-                            {item.pickupRegion} - {item.pickupArea}
-                            {item.pickupHotel && ` (${item.pickupHotel})`}
-                          </span>
-                        </div>
-                        
-                        <div className="d-flex align-items-center mb-1">
-                          <i className="bi bi-calendar-event me-2"></i>
-                          <span>{formatDate(item.pickupDate)} {formatTime(item.pickupTime)}</span>
-                        </div>
-                        
-                        <div className="d-flex align-items-center mb-2">
-                          <i className={`bi bi-${item.paymentType === 'cash' ? 'cash' : 'credit-card'} me-2`}></i>
-                          <span>
-                            {item.paymentType === 'cash' ? 'Nakit' : 'Kart'} Ödeme
-                          </span>
-                        </div>
-                        
-                        <div className="d-flex align-items-center mb-2">
-                          <i className="bi bi-people me-2"></i>
-                          <span>
-                            {item.pax.adult} yetişkin
-                            {item.pax.child > 0 && `, ${item.pax.child} çocuk`}
-                            {item.pax.free > 0 && `, ${item.pax.free} ücretsiz`}
-                          </span>
-                        </div>
-                        
-                        <div className="d-flex justify-content-between align-items-center pt-2 border-top">
-                          <span className="fw-bold">
-                            Toplam: {item.totalPrice} {item.currencySymbol}
-                          </span>
-                        </div>
-                      </div>
                     </div>
-                  </div>
-                ))
+                  ))}
+                </div>
               )}
             </div>
             {cart.length > 0 && (
               <div className="modal-footer">
-                <div className="d-flex w-100 justify-content-between align-items-center">
-                  <div>
-                    <span className="text-muted me-3">Toplam Rezervasyon: {cart.length} adet</span>
+                <div className="d-flex w-100 flex-column flex-sm-row justify-content-between align-items-center gap-2">
+                  <div className="d-flex flex-column flex-sm-row align-items-center gap-2">
+                    <span className="text-muted">Toplam: {cart.length}</span>
                     <button 
                       className="btn btn-info"
                       onClick={onSaveCart}
@@ -124,7 +129,7 @@ const CartModal = ({
                     </button>
                   </div>
                   <button 
-                    className="btn btn-success"
+                    className="btn btn-success w-100 w-sm-auto"
                     onClick={() => {
                       onCompleteReservation();
                       onClose();

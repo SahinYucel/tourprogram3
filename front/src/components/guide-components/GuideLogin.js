@@ -1,42 +1,34 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { guideLogin } from '../../services/api';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './styles/guide-dashboard-style.css';
 
 export default function GuideLogin() {
-  const [name, setUsername] = useState('');
+  const [name, setName] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+    setError('');
+
     try {
-      
-      const response = await axios.post('http://localhost:5000/guide-login', {
+      const response = await guideLogin({
         name,
         password
       });
 
-      console.log('Login response:', response.data);
-
-      if (response.data.token) {
-        // Token'ı localStorage'a kaydet
-        localStorage.setItem('guideToken', response.data.token);
-        
-        // Guide verilerini localStorage'a kaydet
-        const guideData = response.data.guide || response.data.data || {};
-        localStorage.setItem('guideData', JSON.stringify(guideData));
-        
-        // Başarılı login sonrası guide-dashboard'a yönlendir
+      if (response.success) {
+        localStorage.setItem('guideData', JSON.stringify(response.data));
         navigate('/guide-dashboard');
       } else {
-        alert('Giriş başarısız!');
+        setError(response.message || 'Giriş başarısız');
       }
     } catch (error) {
       console.error('Login error:', error);
-      alert(error.response?.data?.message || 'Giriş yapılırken bir hata oluştu');
+      setError('Giriş yapılırken bir hata oluştu');
     }
   };
 
@@ -47,6 +39,11 @@ export default function GuideLogin() {
           <div className="card shadow">
             <div className="card-body p-5">
               <h2 className="text-center mb-4">Rehber Girişi</h2>
+              {error && (
+                <div className="alert alert-danger" role="alert">
+                  {error}
+                </div>
+              )}
               <form onSubmit={handleSubmit}>
                 <div className="mb-3">
                   <label className="form-label">Kullanıcı Adı</label>
@@ -54,7 +51,7 @@ export default function GuideLogin() {
                     type="text"
                     className="form-control"
                     value={name}
-                    onChange={(e) => setUsername(e.target.value)}
+                    onChange={(e) => setName(e.target.value)}
                     required
                   />
                 </div>

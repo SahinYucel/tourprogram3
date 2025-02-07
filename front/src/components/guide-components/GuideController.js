@@ -7,10 +7,9 @@ import { useNavigate } from 'react-router-dom';
 export default function GuideController() {
   const navigate = useNavigate();
   
-  // Token kontrolü yap ve yoksa login sayfasına yönlendir
   useEffect(() => {
-    const token = localStorage.getItem('guideToken');
-    if (!token) {
+    const guideData = localStorage.getItem('guideData');
+    if (!guideData) {
       navigate('/guide-login');
       return;
     }

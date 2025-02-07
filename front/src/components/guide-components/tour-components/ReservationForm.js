@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
 const ReservationForm = ({
   isLoading,
   error,
   selectedTour,
-  availableTours,
+  availableTours = [],
   tourPrice,
   currency,
   customerInfo,
@@ -19,6 +19,45 @@ const ReservationForm = ({
   editingReservation,
   onUpdate
 }) => {
+  // Seçili tur değiştiğinde bölge ve alanları güncelle
+  const selectedTourData = availableTours.find(t => t.id === parseInt(selectedTour));
+
+  // Haftanın günleri
+  const weekDays = [
+    { id: 1, name: 'Pazartesi' },
+    { id: 2, name: 'Salı' },
+    { id: 3, name: 'Çarşamba' },
+    { id: 4, name: 'Perşembe' },
+    { id: 5, name: 'Cuma' },
+    { id: 6, name: 'Cumartesi' },
+    { id: 7, name: 'Pazar' }
+  ];
+
+  // Saat seçimi - seçilen bölge ve alana göre otomatik doldur
+  useEffect(() => {
+    if (selectedTourData && customerInfo.pickupRegion && customerInfo.pickupArea) {
+      const pickupDetail = selectedTourData.pickupTimes?.find(
+        pickup => pickup.region === customerInfo.pickupRegion && 
+                  pickup.area === customerInfo.pickupArea &&
+                  pickup.periodActive === 1
+      );
+      
+      if (pickupDetail) {
+        onCustomerInfoChange({
+          ...customerInfo, // Mevcut state'i koru
+          pickupTime: {
+            hour: pickupDetail.hour || '',
+            minute: pickupDetail.minute || ''
+          }
+        });
+      }
+    }
+  }, [selectedTourData, customerInfo.pickupRegion, customerInfo.pickupArea]); // onCustomerInfoChange'i dependency'den çıkaralım
+
+  // Debug loglarını kaldıralım
+  // console.log('Select disabled status:', !customerInfo.pickupRegion);
+  // console.log('Current pickupRegion:', customerInfo.pickupRegion);
+
   return (
     <div className="card">
       <div className="card-header">
@@ -49,11 +88,14 @@ const ReservationForm = ({
                   onChange={onTourSelect}
                 >
                   <option value="">Tur Seçiniz</option>
-                  {availableTours.map(tour => (
-                    <option key={tour.id} value={tour.id}>
-                      {tour.tour_name} {tour.default_price && `(${tour.default_price} ${currency})`}
-                    </option>
-                  ))}
+                  {Array.isArray(availableTours) && availableTours.map(tour => {
+                    console.log('Tour option:', tour);
+                    return (
+                      <option key={tour.id} value={tour.id}>
+                        {tour.tour_name || tour.name || tour.tourName || 'İsimsiz Tur'}
+                      </option>
+                    );
+                  })}
                 </select>
               )}
             </div>
@@ -76,10 +118,10 @@ const ReservationForm = ({
                 value={currency}
                 onChange={onCurrencyChange}
               >
-                <option value="TRY">₺ TRY</option>
-                <option value="USD">$ USD</option>
-                <option value="EUR">€ EUR</option>
                 <option value="GBP">£ GBP</option>
+                <option value="EUR">€ EUR</option>
+                <option value="USD">$ USD</option>
+                <option value="TRY">₺ TRY</option>
               </select>
             </div>
 
@@ -135,29 +177,128 @@ const ReservationForm = ({
                 }}
               >
                 <option value="">Bölge Seçiniz</option>
-                {regions.map((region) => (
-                  <option key={region} value={region}>
-                    {region}
-                  </option>
-                ))}
+                {selectedTourData?.pickupTimes && 
+                  [...new Set(selectedTourData.pickupTimes.map(pickup => pickup.region))]
+                    .map((region, index) => (
+                      <option key={`${region}-${index}`} value={region}>
+                        {region}
+                      </option>
+                    ))
+                }
               </select>
             </div>
 
+            {/* Alınış Alan */}
             <div className="col-md-6">
               <label className="form-label">Alınış Alan</label>
               <select
                 className="form-select"
-                value={customerInfo.pickupArea}
-                onChange={(e) => onCustomerInfoChange({ pickupArea: e.target.value })}
+                value={customerInfo.pickupArea || ''}
+                onChange={(e) => {
+                  const selectedArea = e.target.value;
+                  if (selectedArea !== customerInfo.pickupArea) { // Sadece değişiklik varsa güncelle
+                    onCustomerInfoChange({
+                      ...customerInfo,
+                      pickupArea: selectedArea,
+                      pickupTime: { hour: '', minute: '' },
+                      period: ''
+                    });
+                  }
+                }}
                 disabled={!customerInfo.pickupRegion}
               >
                 <option value="">Alan Seçiniz</option>
-                {customerInfo.pickupRegion && areas[customerInfo.pickupRegion]?.map((area) => (
-                  <option key={area} value={area}>
-                    {area}
-                  </option>
-                ))}
+                {React.useMemo(() => (
+                  [...new Set(selectedTourData?.pickupTimes
+                    ?.filter(pickup => 
+                      pickup.region === customerInfo.pickupRegion && 
+                      pickup.periodActive === 1
+                    )
+                    ?.map(pickup => pickup.area))]
+                    .sort()
+                    .map((area, index) => (
+                      <option key={`${area}-${index}`} value={area}>
+                        {area}
+                      </option>
+                    ))
+                ), [selectedTourData, customerInfo.pickupRegion])}
               </select>
+            </div>
+
+            {/* Saat ve Fiyat Bilgileri */}
+            <div className="col-md-12">
+              <div className="row">
+                {/* Transfer Saati */}
+                <div className="col-md-4">
+                  <label className="form-label">Transfer Saati</label>
+                  <select
+                    className="form-select"
+                    value={customerInfo.pickupTime.hour && customerInfo.pickupTime.minute ? 
+                      `${customerInfo.pickupTime.hour}:${customerInfo.pickupTime.minute}` : ''}
+                    onChange={(e) => {
+                      const newValue = e.target.value;
+                      const currentValue = `${customerInfo.pickupTime.hour}:${customerInfo.pickupTime.minute}`;
+                      
+                      if (newValue !== currentValue) {
+                        if (!newValue) {
+                          onCustomerInfoChange({
+                            ...customerInfo,
+                            pickupTime: { hour: '', minute: '' }
+                          });
+                          return;
+                        }
+
+                        const [hour, minute] = newValue.split(':');
+                        const selectedTime = selectedTourData?.pickupTimes?.find(
+                          pickup => 
+                            pickup.region === customerInfo.pickupRegion && 
+                            pickup.area === customerInfo.pickupArea &&
+                            pickup.hour === hour &&
+                            pickup.minute === minute &&
+                            pickup.periodActive === 1
+                        );
+
+                        onCustomerInfoChange({
+                          ...customerInfo,
+                          pickupTime: { hour, minute },
+                          period: selectedTime?.period?.toString() || ''
+                        });
+                      }
+                    }}
+                    disabled={!customerInfo.pickupArea}
+                  >
+                    <option value="">Saat Seçiniz</option>
+                    {React.useMemo(() => (
+                      selectedTourData?.pickupTimes
+                        ?.filter(pickup => 
+                          pickup.region === customerInfo.pickupRegion && 
+                          pickup.area === customerInfo.pickupArea &&
+                          pickup.periodActive === 1
+                        )
+                        ?.sort((a, b) => {
+                          const timeA = parseInt(a.hour) * 60 + parseInt(a.minute);
+                          const timeB = parseInt(b.hour) * 60 + parseInt(b.minute);
+                          return timeA - timeB;
+                        })
+                        ?.map((pickup, index) => (
+                          <option 
+                            key={`${pickup.hour}:${pickup.minute}-${pickup.period}-${index}`} 
+                            value={`${pickup.hour}:${pickup.minute}`}
+                          >
+                            {`${pickup.hour.padStart(2, '0')}:${pickup.minute.padStart(2, '0')}`}
+                            {pickup.period ? ` (${pickup.period}. Periyod)` : ''}
+                          </option>
+                        ))
+                    ), [selectedTourData, customerInfo.pickupRegion, customerInfo.pickupArea])}
+                  </select>
+                </div>
+
+                {/* Rehber Yetişkin Fiyatı */}
+              
+
+                {/* Rehber Çocuk Fiyatı */}
+            
+              </div>
             </div>
 
             {/* Otel */}
@@ -171,14 +312,56 @@ const ReservationForm = ({
               />
             </div>
 
-            {/* Tarih ve Saat */}
+            {/* Tur günleri seçimi - Tarih inputundan önce ekleyelim */}
+            <div className="col-md-12 mb-3">
+              <label className="form-label">Tur Günleri</label>
+              <div className="d-flex gap-2 flex-wrap">
+                {weekDays.map(day => {
+                  const isAvailable = selectedTourData?.tourDays?.includes(day.id);
+                  return (
+                    <button
+                      key={day.id}
+                      type="button"
+                      className={`btn ${
+                        customerInfo.selectedDay === day.id
+                          ? 'btn-primary'
+                          : isAvailable
+                          ? 'btn-outline-primary'
+                          : 'btn-outline-secondary'
+                      }`}
+                      disabled={!isAvailable}
+                      onClick={() => onCustomerInfoChange({ selectedDay: day.id })}
+                    >
+                      {day.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Tarih seçimi */}
             <div className="col-md-4">
               <label className="form-label">Tarih</label>
               <input
                 type="date"
                 className="form-control"
                 value={customerInfo.pickupDate}
-                onChange={(e) => onCustomerInfoChange({ pickupDate: e.target.value })}
+                onChange={(e) => {
+                  // Seçilen tarihin hangi güne denk geldiğini bul
+                  const selectedDate = new Date(e.target.value);
+                  const dayOfWeek = selectedDate.getDay() || 7; // 0-6 -> 1-7
+
+                  // Eğer seçilen gün tur günlerinden biri değilse uyarı ver
+                  if (selectedTourData?.tourDays && !selectedTourData.tourDays.includes(dayOfWeek)) {
+                    alert('Seçilen tarih için tur bulunmamaktadır. Lütfen tur günlerinden birini seçin.');
+                    return;
+                  }
+
+                  onCustomerInfoChange({ 
+                    pickupDate: e.target.value,
+                    selectedDay: dayOfWeek
+                  });
+                }}
               />
             </div>
 
@@ -309,6 +492,15 @@ const ReservationForm = ({
                   </button>
                 )}
               </div>
+                <div className="col-md-8 d-flex justify-content-end">
+                  <div className='col-md-4'>
+                    <label className="form-label">{selectedTourData?.guideAdultPrice}</label>
+                  </div>
+                  <div className='col-md-4'>
+                      <label className="form-label">{selectedTourData?.guideChildPrice}</label>
+                  </div>
+                  
+                </div>
             </div>
           </div>
         </form>
