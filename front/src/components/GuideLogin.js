@@ -26,7 +26,7 @@ export default function GuideLogin() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/guide-login', {
+      const response = await fetch('http://13.216.32.130:5000/guide-login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

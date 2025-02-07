@@ -10,10 +10,10 @@ const app = express();
 app.use(cors({
   origin: function(origin, callback) {
     const allowedOrigins = [
-      //'http://13.216.32.130',
-      //'http://13.216.32.130:3000',
-      //'http://13.216.32.130:5000'
-      'http://localhost:3000'
+      'http://13.216.32.130',
+      'http://13.216.32.130:3000',
+      'http://13.216.32.130:5000'
+      //'http://localhost:3000'
     ];
     
     // origin undefined olabilir (örneğin Postman kullanırken)
