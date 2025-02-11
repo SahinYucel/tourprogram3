@@ -6,6 +6,7 @@ const TourTableHeader = () => {
       <tr>
         <th style={{ width: '40px' }}></th>
         <th style={{ width: '80px' }}>Durum</th>
+        <th style={{ width: '120px' }}>Öncelik</th>
         <th>Tur Adı</th>
         <th>Operatör</th>
         <th>Bölgeler</th>

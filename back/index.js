@@ -10,10 +10,10 @@ const app = express();
 app.use(cors({
   origin: function(origin, callback) {
     const allowedOrigins = [
-      'http://13.216.32.130',
-      'http://13.216.32.130:3000',
-      'http://13.216.32.130:5000'
-      //'http://localhost:3000'
+      //'http://13.216.32.130',
+      //'http://13.216.32.130:3000',
+      //'http://13.216.32.130:5000'
+      'http://localhost:3000'
     ];
     
     // origin undefined olabilir (örneğin Postman kullanırken)
@@ -85,7 +85,7 @@ const currencyRoutes = require('./routes/currency');
 const providerDataRoutes = require('./routes/providerData')(db);
 const guideDataRoutes = require('./routes/guideData')(db);
 const safeDataRouter = require('./routes/safeData')(db);
-const guideLoginRouter = require('./routes/guideLogin');
+const guideLoginRouter = require('./routes/guideLogin')(db);
 const guideGetToursRouter = require('./routes/guidegetTours')(db);
 
 // Route middlewares
@@ -100,7 +100,7 @@ app.use('/currency', currencyRoutes);
 app.use('/provider-data', providerDataRoutes);
 app.use('/guide-data', guideDataRoutes);
 app.use('/safe-data', safeDataRouter);
-app.use('/guide-login', guideLoginRouter(db));
+app.use('/guide-login', guideLoginRouter);
 app.use('/guidegetTours', guideGetToursRouter);
 
 

@@ -64,23 +64,7 @@ const TourTableExpandedRow = ({ tour, tourIndex }) => {
     <tr>
       <td colSpan="12s">
         <div className="p-3">
-          {/* Fiyatlar */}
-          <div className="mb-4">
-            <h6 className="mb-3">
-              <i className="bi bi-currency-euro me-2"></i>
-              Fiyatlar
-            </h6>
-            <div className="d-flex gap-4">
-              <div>
-                <small className="text-muted">Yetişkin:</small>
-                <div className="fw-medium">{tour.adultPrice} €</div>
-              </div>
-              <div>
-                <small className="text-muted">Çocuk:</small>
-                <div className="fw-medium">{tour.childPrice} €</div>
-              </div>
-            </div>
-          </div>
+    
 
           {/* Tur Günleri */}
           <div className="mb-4">

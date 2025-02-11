@@ -26,25 +26,76 @@ module.exports = (db) => {
         [companyRef]
       );
 
-      // Yeni turları ekle
+      // Mevcut ana turları sil
+      await connection.query(
+        'DELETE FROM main_tours WHERE company_ref = ?',
+        [companyRef]
+      );
+
+      // Ana turları kaydet
+      const mainTours = new Set();
+      for (const tourData of req.body) {
+        const { mainTour } = tourData;
+        
+        // Ana tur adını al (ya kendi ana turuysa ya da bağlı olduğu ana tur)
+        if (mainTour.main_tour_name) {
+          mainTours.add(mainTour.main_tour_name);
+        }
+      }
+
+      console.log('Kaydedilecek ana turlar:', [...mainTours]);
+
+      // Ana turları kaydet ve ID'lerini sakla
+      const mainTourIds = new Map(); // tour_name -> id eşleştirmesi için
+      for (const mainTourName of mainTours) {
+        try {
+          const insertQuery = `INSERT INTO main_tours (company_ref, tour_name) 
+                             VALUES (?, ?)`;
+          
+          const [result] = await connection.query(insertQuery, [
+            companyRef,
+            mainTourName
+          ]);
+
+          mainTourIds.set(mainTourName, result.insertId);
+          console.log(`Ana tur kaydedildi:`, {
+            tour_name: mainTourName,
+            company_ref: companyRef,
+            insertId: result.insertId
+          });
+        } catch (error) {
+          console.error(`Ana tur kaydetme hatası:`, {
+            tour_name: mainTourName,
+            error: error.message
+          });
+          throw error;
+        }
+      }
+
+      // Normal turları kaydet
       for (const tourData of req.body) {
         const { mainTour, days, pickupTimes, options } = tourData;
-        
-        console.log('Kaydedilecek tur verisi:', {
+
+        // Ana tur ID'sini bul
+        const mainTourId = mainTour.main_tour_name ? mainTourIds.get(mainTour.main_tour_name) : null;
+
+        console.log('Tur kaydediliyor:', {
           tour_name: mainTour.tour_name,
-          priority: mainTour.priority,
-          priority_type: typeof mainTour.priority
+          main_tour_name: mainTour.main_tour_name,
+          main_tour_id: mainTourId
         });
 
         const insertQuery = `INSERT INTO tours (
-          company_ref, tour_name, operator, operator_id, 
+          company_ref, tour_name, main_tour_id,
+          operator, operator_id, 
           adult_price, child_price, guide_adult_price, guide_child_price, 
-          is_active, priority
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+          is_active, priority, description, currency
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
         const insertValues = [
           mainTour.company_ref,
           mainTour.tour_name,
+          mainTourId,  // Ana tur ID'si
           mainTour.operator,
           mainTour.operator_id,
           parseFloat(mainTour.adult_price) || 0,
@@ -52,11 +103,17 @@ module.exports = (db) => {
           parseFloat(mainTour.guide_adult_price) || 0,
           parseFloat(mainTour.guide_child_price) || 0,
           mainTour.is_active === false ? 0 : 1,
-          parseInt(mainTour.priority) || 0
+          parseInt(mainTour.priority) || 0,
+          mainTour.description || '',
+          mainTour.currency || 'EUR'
         ];
 
-        console.log('SQL Sorgusu:', insertQuery);
-        console.log('SQL Değerleri:', insertValues);
+        console.log('Kaydedilen tur değerleri:', {
+          tour_name: mainTour.tour_name,
+          main_tour_name: mainTour.main_tour_name,
+          main_tour_id: mainTourId,
+          values: insertValues
+        });
 
         const [tourResult] = await connection.query(insertQuery, insertValues);
         const tourId = tourResult.insertId;
@@ -184,17 +241,14 @@ module.exports = (db) => {
     try {
       const { companyRef } = req.params;
 
-      // Veritabanından gelen ham veriyi kontrol edelim
+      // Turları getir
       const [tours] = await connection.query(
-        `SELECT 
-          id, company_ref, tour_name, operator, operator_id, 
-          adult_price, child_price, guide_adult_price, guide_child_price,
-          is_active, COALESCE(priority, 0) as priority 
-         FROM tours WHERE company_ref = ?`,
+        `SELECT t.*, mt.tour_name as main_tour_name
+         FROM tours t
+         LEFT JOIN main_tours mt ON t.main_tour_id = mt.id
+         WHERE t.company_ref = ?`,
         [companyRef]
       );
-
-      console.log('Veritabanından gelen ham turlar:', tours); // İlk kontrol noktası
 
       // Her tur için ilişkili verileri al
       const fullTours = await Promise.all(tours.map(async (tour) => {
@@ -206,7 +260,7 @@ module.exports = (db) => {
 
         // Kalkış zamanlarını al
         const [pickupTimes] = await connection.query(
-          'SELECT *, period_active FROM tour_pickup_times WHERE tour_id = ?',
+          'SELECT * FROM tour_pickup_times WHERE tour_id = ?',
           [tour.id]
         );
 
@@ -216,56 +270,44 @@ module.exports = (db) => {
           [tour.id]
         );
 
-        // is_active'i boolean'a çevir
-        const isActive = tour.is_active === 1 || tour.is_active === '1' || tour.is_active === true;
-        console.log('Tur ID:', tour.id, 'DB is_active:', tour.is_active, 'Converted isActive:', isActive);
-
-        // period_active'i isActive olarak boolean'a çevir
-        const formattedPickupTimes = pickupTimes.map(time => ({
-          ...time,
-          isActive: time.period_active === 1,  // 1 ise true, değilse false
-          period_active: undefined  // frontend'e gönderirken period_active'i kaldır
-        }));
-
         // Bölgeleri al
         const [regions] = await connection.query(
           'SELECT region_name FROM tour_regions WHERE tour_id = ?',
           [tour.id]
         );
 
-        // Dönüş objesini oluşturmadan önce kontrol edelim
-        console.log('İşlenecek tur verisi:', {
-          id: tour.id,
-          priority: tour.priority,
-          parsed_priority: parseInt(tour.priority) || 0
-        });
-
-        const mainTourData = {
-          id: tour.id,
-          company_ref: tour.company_ref,
-          tour_name: tour.tour_name,
-          operator: tour.operator,
-          operator_id: tour.operator_id,
-          adult_price: tour.adult_price,
-          child_price: tour.child_price,
-          guide_adult_price: tour.guide_adult_price,
-          guide_child_price: tour.guide_child_price,
-          is_active: tour.is_active === 1,
-          priority: parseInt(tour.priority) || 0,
-          bolgeler: regions.map(r => r.region_name)
-        };
-
-        console.log('Oluşturulan mainTour objesi:', mainTourData); // Son kontrol noktası
+        // Ana tur mu kontrol et
+        const [isMainTour] = await connection.query(
+          'SELECT 1 FROM main_tours WHERE company_ref = ? AND tour_name = ?',
+          [companyRef, tour.tour_name]
+        );
 
         return {
-          mainTour: mainTourData,
+          mainTour: {
+            id: tour.id,
+            company_ref: tour.company_ref,
+            tour_name: tour.tour_name,
+            main_tour_name: tour.main_tour_name,
+            operator: tour.operator,
+            operator_id: tour.operator_id,
+            adult_price: tour.adult_price,
+            child_price: tour.child_price,
+            guide_adult_price: tour.guide_adult_price,
+            guide_child_price: tour.guide_child_price,
+            is_active: tour.is_active === 1,
+            priority: parseInt(tour.priority) || 0,
+            bolgeler: regions.map(r => r.region_name),
+            description: tour.description || '',
+            currency: tour.currency || 'EUR'
+          },
           days: days.map(d => d.day_number),
-          pickupTimes: formattedPickupTimes,
+          pickupTimes: pickupTimes.map(time => ({
+            ...time,
+            isActive: time.period_active === 1
+          })),
           options
         };
       }));
-
-      console.log('Frontend\'e gönderilen işlenmiş turlar:', JSON.stringify(fullTours, null, 2));
 
       res.json({
         success: true,

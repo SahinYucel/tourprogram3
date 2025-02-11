@@ -91,22 +91,6 @@ const PersonalInfo = ({ formData, onChange }) => {
         </div>
       </div>
 
-      <div className="col-md-12">
-        <div className="form-group">
-          <label className="form-label">Hak Ediş Oranı (%)</label>
-          <input
-            type="number"
-            className="form-control"
-            name="entitlement"
-            value={formData.entitlement}
-            onChange={onChange}
-            placeholder="0"
-            step="0.01"
-            min="0"
-            max="100"
-          />
-        </div>
-      </div>
 
     </>
   );

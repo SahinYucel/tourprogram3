@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const AutocompleteInput = ({ 
   id, 
@@ -8,97 +9,88 @@ const AutocompleteInput = ({
   placeholder,
   icon 
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filteredOptions, setFilteredOptions] = useState(options);
-  const [selectedOption, setSelectedOption] = useState(null);
-  const wrapperRef = useRef(null);
+  const inputRef = useRef(null);
 
   useEffect(() => {
-    // Input değeri değiştiğinde search term'i güncelle
-    const option = options.find(opt => opt.value === value);
-    setSearchTerm(option ? option.label : '');
-    setSelectedOption(option || null);
-  }, [value, options]);
+    setSearchTerm(value);
+  }, [value]);
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
-        setIsOpen(false);
-        // Eğer geçerli bir seçim yoksa, input'u temizle
-        if (!selectedOption) {
-          setSearchTerm('');
-          onChange({
-            target: {
-              name: id,
-              value: ''
-            }
-          });
-        } else {
-          // Seçili değeri geri yükle
-          setSearchTerm(selectedOption.label);
-        }
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [selectedOption, onChange, id]);
-
-  useEffect(() => {
-    // Arama terimini kullanarak seçenekleri filtrele
-    const filtered = options.filter(option => 
-      option.label.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setFilteredOptions(filtered);
-  }, [searchTerm, options]);
+  const handleInputClick = () => {
+    // Input'a tıklandığında değeri sıfırla
+    setSearchTerm('');
+    onChange({ target: { name: id, value: '' } });
+    setShowSuggestions(true);
+  };
 
   const handleInputChange = (e) => {
     const newValue = e.target.value;
     setSearchTerm(newValue);
-    setIsOpen(true);
-    setSelectedOption(null);
+    onChange({ target: { name: id, value: newValue } });
+    setShowSuggestions(true);
   };
 
-  const handleOptionSelect = (option) => {
-    setSearchTerm(option.label);
-    setSelectedOption(option);
-    setIsOpen(false);
-    
-    onChange({
-      target: {
-        name: id,
-        value: option.value
-      }
-    });
+  const handleSuggestionClick = (suggestion) => {
+    setSearchTerm(suggestion.value);
+    onChange({ target: { name: id, value: suggestion.value } });
+    setShowSuggestions(false);
   };
+
+  const handleClickOutside = (e) => {
+    if (inputRef.current && !inputRef.current.contains(e.target)) {
+      setShowSuggestions(false);
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleIconClick = (e) => {
+    e.stopPropagation(); // Prevent the input click handler from firing
+    navigate('/companyAgencyDashboard/tours/listeler');
+  };
+
+  const filteredOptions = options.filter(option =>
+    option.searchTerms?.includes(searchTerm.toLowerCase()) ||
+    option.value.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <div className="position-relative" ref={wrapperRef}>
+    <div className="position-relative" ref={inputRef}>
       <div className="input-group">
         {icon && (
-          <span className="input-group-text">
+          <span 
+            className="input-group-text" 
+            onClick={handleIconClick}
+            style={{ cursor: 'pointer' }}
+          >
             <i className={`bi ${icon}`}></i>
           </span>
         )}
         <input
           type="text"
           className="form-control"
-          placeholder={placeholder}
           value={searchTerm}
           onChange={handleInputChange}
-          onFocus={() => setIsOpen(true)}
+          onClick={handleInputClick}
+          placeholder={placeholder}
         />
       </div>
       
-      {isOpen && filteredOptions.length > 0 && (
+      {showSuggestions && searchTerm && (
         <div className="position-absolute w-100 mt-1 shadow bg-white rounded border" 
              style={{ zIndex: 1000, maxHeight: '200px', overflowY: 'auto' }}>
           {filteredOptions.map((option, index) => (
             <div
               key={index}
               className="px-3 py-2 cursor-pointer hover-bg-light"
-              onClick={() => handleOptionSelect(option)}
+              onClick={() => handleSuggestionClick(option)}
               style={{ cursor: 'pointer' }}
               onMouseEnter={e => e.target.style.backgroundColor = '#f8f9fa'}
               onMouseLeave={e => e.target.style.backgroundColor = 'transparent'}

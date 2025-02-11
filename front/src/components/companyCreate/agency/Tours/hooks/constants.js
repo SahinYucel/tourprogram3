@@ -6,6 +6,7 @@ export const INITIAL_TOUR_STATE = {
   guideAdultPrice: '', // Yeni eklenen
   guideChildPrice: '', // Yeni eklenen
   selectedDays: [],
+  description: '',  // Yeni açıklama alanı
   pickupTimes: [{
     hour: '',
     minute: '',
@@ -15,7 +16,8 @@ export const INITIAL_TOUR_STATE = {
     period: ''
   }],
   options: [],
-  isActive: true
+  isActive: true,
+  currency: 'EUR' // TRY'den EUR'ya değiştirildi
 };
 
 export const DAYS = [

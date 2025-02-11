@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getTourData, saveGuides, getGuides } from '../../../../services/api';
-import GuideForm from './components/GuideForm/index';
-import GuideTable from './components/GuideTable/index';
+import GuideForm from './components/GuideForm';
+import GuideTable from './components/GuideTable';
 
 export default function Guides() {
   const defaultLanguages = {
@@ -42,7 +42,6 @@ export default function Guides() {
     phone: '',
     code: generateCode(),
     guide_password: '',
-    entitlement: '',
   };
 
   const [guides, setGuides] = useState([]);
@@ -185,7 +184,6 @@ export default function Guides() {
       languagesDisplay: formatLanguages(formData.languages, formData.otherLanguages),
       code: formData.code || generateCode(),
       guide_password: formData.guide_password,
-      entitlement: parseFloat(formData.entitlement) || 0,
     };
 
     if (editingId) {

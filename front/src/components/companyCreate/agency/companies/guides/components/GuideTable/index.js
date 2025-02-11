@@ -26,7 +26,6 @@ const GuideTable = ({ guides, onEdit, onDelete, onSettingsSave }) => {
             <th>İsim</th>
             <th>Soyisim</th>
             <th>Kod</th>
-            <th>Hakediş Oranı</th>
             <th>Şifre</th>
             <th>Bölgeler</th>
             <th>Diller</th>
@@ -38,11 +37,9 @@ const GuideTable = ({ guides, onEdit, onDelete, onSettingsSave }) => {
         <tbody>
           {guides.map((guide) => (
             <tr key={guide.id}>
-
               <td>{guide.name}</td>
               <td>{guide.surname}</td>
               <td>{guide.code}</td>
-              <td>{guide.entitlement}%</td>
               <td>{guide.guide_password}</td>
               <td>{Array.isArray(guide.region) ? guide.region.join(', ') : guide.region}</td>
               <td>{guide.languagesDisplay}</td>
@@ -65,14 +62,36 @@ const GuideTable = ({ guides, onEdit, onDelete, onSettingsSave }) => {
                 >
                   Sil
                 </button>
-               
+                <button
+                  className="btn btn-sm btn-info"
+                  onClick={() => handleSettingsClick(guide)}
+                >
+                  Ayarlar
+                </button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
 
-   
+      {selectedGuide && (
+        <GuideSettingsModal
+          show={showSettingsModal}
+          onHide={() => setShowSettingsModal(false)}
+          onSave={handleSettingsSave}
+          guide={{
+            ...selectedGuide,
+            earnings: selectedGuide.earnings || 0,
+            promotionRate: selectedGuide.promotionRate || 0,
+            revenue: selectedGuide.revenue || 0,
+            pax: {
+              adult: selectedGuide.pax?.adult || 0,
+              child: selectedGuide.pax?.child || 0,
+              free: selectedGuide.pax?.free || 0
+            }
+          }}
+        />
+      )}
     </div>
   );
 };

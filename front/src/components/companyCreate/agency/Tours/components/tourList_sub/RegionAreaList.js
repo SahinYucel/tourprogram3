@@ -94,7 +94,7 @@ const RegionAreaList = ({
               onChange={(e) => setSelectedRegionId(Number(e.target.value))}
               style={{ maxWidth: '200px' }}
             >
-              <option value="">Bölge seçiniz</option>
+              <option value="">Alan seçiniz</option>
               {regions.map(region => (
                 <option key={region.id} value={region.id}>
                   {region.name}
@@ -121,9 +121,9 @@ const RegionAreaList = ({
 
         {/* Region and Area Table */}
         {regions.length > 0 && (
-          <div className="table-responsive">
-            <table className="table">
-              <thead>
+          <div className="table-responsive" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+            <table className="table table-hover">
+              <thead style={{ position: 'sticky', top: 0, backgroundColor: 'white', zIndex: 1 }}>
                 <tr>
                   <th scope="col">#</th>
                   <th scope="col">İsim</th>

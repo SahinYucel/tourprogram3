@@ -6,9 +6,9 @@ const GuideTableRow = ({ guide, onEdit, onDelete, onSettingsClick }) => {
       <td>{guide.code}</td>
       <td>{guide.name}</td>
       <td>{guide.surname}</td>
-      <td>{guide.guideGroup}</td>
-      <td>{guide.entitlement ? `%${guide.entitlement}` : '%0'}</td>
       <td>{Array.isArray(guide.region) ? guide.region.join(', ') : guide.region}</td>
+      <td>{guide.guideGroup}</td>
+      <td>{guide.phone}</td>
       <td>
         {Object.entries(guide.languages || {})
           .filter(([_, isSelected]) => isSelected)
@@ -16,7 +16,6 @@ const GuideTableRow = ({ guide, onEdit, onDelete, onSettingsClick }) => {
           .join(', ')}
         {guide.otherLanguages && `, ${guide.otherLanguages}`}
       </td>
-      <td>{guide.phone}</td>
       <td>
         <span className={`badge ${guide.isActive ? 'bg-success' : 'bg-danger'}`}>
           {guide.isActive ? 'Aktif' : 'Pasif'}
@@ -48,4 +47,4 @@ const GuideTableRow = ({ guide, onEdit, onDelete, onSettingsClick }) => {
   );
 };
 
-export default GuideTableRow;
+export default GuideTableRow; 

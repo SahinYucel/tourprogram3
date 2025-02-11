@@ -10,12 +10,7 @@ import CompanyLogin from './components/CompanyLogin';
 import CompanyAgencySlider from './components/companyCreate/agency/CompanyAgencySlider';
 
 // guide components
-import GuideController from './components/guide-components/GuideController';
-import Wallet from './components/guide-components/Wallet';
-import Reservations from './components/guide-components/Reservations';
-import Tours from './components/guide-components/Tours';
-import GuideLogin from './components/guide-components/GuideLogin';
-import ProtectedRoute from './components/guide-components/ProtectedRoute';
+
 
 function App() {
   return (
@@ -31,26 +26,8 @@ function App() {
           <Route path="/company-login" element={<CompanyLogin />} />
           <Route path="/companyAgencyDashboard/*" element={<CompanyAgencySlider />} />
 
-          {/* Guide Routes */}
-          <Route path="/guide-login" element={<GuideLogin />} />
-          <Route path="/guide-dashboard" element={<GuideController />} />
-          <Route path="/guide-dashboard/tours" element={<Tours />} />
-          <Route 
-            path="/guide-dashboard/wallet" 
-            element={
-              <ProtectedRoute>
-                <Wallet />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/guide-dashboard/reservations" 
-            element={
-              <ProtectedRoute>
-                <Reservations />
-              </ProtectedRoute>
-            } 
-          />
+     
+       
         </Routes>
       </div>
     </Router>

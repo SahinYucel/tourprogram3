@@ -39,7 +39,7 @@ module.exports = (db) => {
 
       try {
         // Önce bu şirkete ait tüm rehberleri ve ayarları sil
-        await query('DELETE FROM agency_guide_settings WHERE guide_id IN (SELECT id FROM agencyguide WHERE company_id = ?)', [companyId]);
+        await query('DELETE FROM agency_guide_accounts WHERE guide_id IN (SELECT id FROM agencyguide WHERE company_id = ?)', [companyId]);
         await query('DELETE FROM guide_regions WHERE guide_id IN (SELECT id FROM agencyguide WHERE company_id = ?)', [companyId]);
         await query('DELETE FROM agencyguide WHERE company_id = ?', [companyId]);
 
@@ -58,8 +58,8 @@ module.exports = (db) => {
             INSERT INTO agencyguide (
               name, surname, is_active, guide_group,
               nickname, languages, other_languages, phone, code, sifre,
-              company_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              company_id, is_login
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `;
 
           const guideResult = await query(insertGuideSql, [
@@ -73,14 +73,15 @@ module.exports = (db) => {
             guide.phone,
             guide.code,
             guide.guide_password,
-            companyId
+            companyId,
+            1  // is_login varsayılan olarak 1 olarak ayarlandı
           ]);
 
           const guideId = guideResult.insertId;
 
           // Rehber ayarlarını kaydet
           const insertSettingsSql = `
-            INSERT INTO agency_guide_settings (
+            INSERT INTO agency_guide_accounts (
               guide_id, earnings, promotion_rate, revenue,
               pax_adult, pax_child, pax_free
             ) VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -89,7 +90,7 @@ module.exports = (db) => {
           await query(insertSettingsSql, [
             guideId,
             parseFloat(guide.earnings) || 0,
-            parseFloat(guide.promotionRate) || 0,
+            parseFloat(guide.entitlement) || 0,
             parseFloat(guide.revenue) || 0,
             parseInt(guide.pax?.adult) || 0,
             parseInt(guide.pax?.child) || 0,
@@ -152,16 +153,17 @@ module.exports = (db) => {
           ag.phone,
           ag.code,
           ag.sifre as guide_password,
+          aga.promotion_rate as entitlement,
           GROUP_CONCAT(DISTINCT gr.region_name) as regions,
-          ags.earnings,
-          ags.promotion_rate as promotionRate,
-          ags.revenue,
-          ags.pax_adult,
-          ags.pax_child,
-          ags.pax_free
+          aga.earnings,
+          aga.promotion_rate as promotionRate,
+          aga.revenue,
+          aga.pax_adult,
+          aga.pax_child,
+          aga.pax_free
         FROM agencyguide ag 
         LEFT JOIN guide_regions gr ON ag.id = gr.guide_id
-        LEFT JOIN agency_guide_settings ags ON ag.id = ags.guide_id
+        LEFT JOIN agency_guide_accounts aga ON ag.id = aga.guide_id
         WHERE ag.company_id = ?
         GROUP BY ag.id
       `;
@@ -217,7 +219,8 @@ module.exports = (db) => {
             adult: parseInt(guide.pax_adult) || 0,
             child: parseInt(guide.pax_child) || 0,
             free: parseInt(guide.pax_free) || 0
-          }
+          },
+          entitlement: parseFloat(guide.entitlement) || 0
         };
       });
 
@@ -296,13 +299,15 @@ module.exports = (db) => {
       const settingsSql = `
         SELECT earnings, promotion_rate, revenue, 
                pax_adult, pax_child, pax_free
-        FROM agency_guide_settings 
+        FROM agency_guide_accounts 
         WHERE guide_id = ?
       `;
       
       const settings = await query(settingsSql, [guide.id]);
 
-      // Token oluştur (gerçek uygulamada JWT kullanılabilir)
+      // Giriş başarılı olduğunda is_login'i güncelle
+
+      // Token oluştur
       const token = 'dummy-token-' + Math.random().toString(36).substring(7);
 
       // Response objesi
@@ -325,7 +330,8 @@ module.exports = (db) => {
               child: settings[0].pax_child,
               free: settings[0].pax_free
             }
-          } : null
+          } : null,
+          isLogin: 1
         },
         token
       };

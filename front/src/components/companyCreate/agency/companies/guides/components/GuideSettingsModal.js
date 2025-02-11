@@ -6,7 +6,6 @@ const GuideSettingsModal = ({ show, onHide, guide, onSave }) => {
     earnings: guide.earnings || '',
     promotionRate: guide.promotionRate || '',
     revenue: guide.revenue || '',
-    entitlement: guide.entitlement || '',
     pax: {
       adult: guide.pax?.adult || '',
       child: guide.pax?.child || '',
@@ -20,7 +19,6 @@ const GuideSettingsModal = ({ show, onHide, guide, onSave }) => {
         earnings: guide.earnings || '',
         promotionRate: guide.promotionRate || '',
         revenue: guide.revenue || '',
-        entitlement: guide.entitlement || '',
         pax: {
           adult: guide.pax?.adult || '',
           child: guide.pax?.child || '',
@@ -55,7 +53,6 @@ const GuideSettingsModal = ({ show, onHide, guide, onSave }) => {
       earnings: parseFloat(settings.earnings) || 0,
       promotionRate: parseFloat(settings.promotionRate) || 0,
       revenue: parseFloat(settings.revenue) || 0,
-      entitlement: parseFloat(settings.entitlement) || 0,
       pax: {
         adult: parseInt(settings.pax.adult) || 0,
         child: parseInt(settings.pax.child) || 0,
@@ -130,19 +127,6 @@ const GuideSettingsModal = ({ show, onHide, guide, onSave }) => {
                   </div>
                 </div>
 
-                <div className="row mb-3">
-                  <NumberInput
-                    label="Hak Ediş Oranı"
-                    name="entitlement"
-                    value={settings.entitlement}
-                    onChange={handleChange}
-                    placeholder="0 %"
-                    min="0"
-                    max="100"
-                    suffix="%"
-                  />
-                </div>
-
                 <div className="row">
                   <PaxInput
                     label="Pax Yetişkin"
@@ -164,6 +148,8 @@ const GuideSettingsModal = ({ show, onHide, guide, onSave }) => {
                   />
                 </div>
               </div>
+
+          
 
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={onHide}>

@@ -40,22 +40,17 @@ const Tours = () => {
   }, [tourData]);
 
   useEffect(() => {
-    console.log('INITIAL_TOUR_STATE:', INITIAL_TOUR_STATE);
-  }, []);
-
-  useEffect(() => {
     const loadExistingTours = async () => {
       try {
         const agencyUser = JSON.parse(localStorage.getItem('agencyUser'));
         if (!agencyUser?.companyId) {
-          console.error('Şirket ID bulunamadı');
           return;
         }
 
         const response = await getAllTours(agencyUser.companyId);
         if (response.success && Array.isArray(response.data)) {
           const formattedTours = response.data.map(tour => ({
-            id: tour.mainTour.id, // ID'yi ekleyelim
+            id: tour.mainTour.id,
             tourName: tour.mainTour.tour_name,
             operator: tour.mainTour.operator,
             operatorId: tour.mainTour.operator_id,
@@ -66,6 +61,8 @@ const Tours = () => {
             isActive: tour.mainTour.is_active,
             priority: tour.mainTour.priority || '0',
             bolgeler: tour.mainTour.bolgeler || [],
+            description: tour.mainTour.description || '',
+            currency: tour.mainTour.currency || 'EUR',
             relatedData: {
               days: tour.days || [],
               pickupTimes: tour.pickupTimes || [],
@@ -74,15 +71,29 @@ const Tours = () => {
           }));
 
           setCreatedTours(formattedTours);
-          console.log('Var olan turlar yüklendi:', formattedTours);
         }
       } catch (error) {
-        console.error('Turlar yüklenirken hata:', error);
+        // console.error('Turlar yüklenirken hata:', error);
       }
     };
 
     loadExistingTours();
   }, []);
+
+  useEffect(() => {
+  }, [
+    tourData,
+    createdTours,
+    editingIndex,
+    searchQuery,
+    showActive,
+    isCollapsed,
+    savedTours,
+    savedRegions,
+    savedAreas,
+    savedCompanies,
+    bolgeler
+  ]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -149,12 +160,15 @@ const Tours = () => {
       childPrice: tourData.childPrice || 0,
       guideAdultPrice: tourData.guideAdultPrice || 0,
       guideChildPrice: tourData.guideChildPrice || 0,
+      currency: tourData.currency || 'EUR',
       isActive: true,
       priority: tourData.priority || '0',
+      tourGroup: tourData.tourGroup,
       bolgeId: tourData.bolgeId || [],
       bolgeler: tourData.bolgeId ? tourData.bolgeId.map(id => 
         bolgeler.find(bolge => bolge.id === id)?.name || ''
-      ) : []
+      ) : [],
+      description: tourData.description || ''
     };
 
     // Boş olmayan pickup zamanlarını filtrele
@@ -218,9 +232,9 @@ const Tours = () => {
         guideAdultPrice: tour.guideAdultPrice || '',
         guideChildPrice: tour.guideChildPrice || '',
         selectedDays: tour.relatedData?.days || [],
+        tourGroup: tour.tourGroup,
         bolgeId: selectedBolgeIds,
         pickupTimes: [
-          // Önce mevcut pickup time'ları ekle
           ...(tour.relatedData?.pickupTimes?.map(time => ({
             hour: time.hour || '',
             minute: time.minute || '',
@@ -229,7 +243,6 @@ const Tours = () => {
             isActive: time.isActive !== false,
             period: time.period || '1'
           })) || []),
-          // En sona boş input için bir entry
           {
             hour: '',
             minute: '',
@@ -244,7 +257,9 @@ const Tours = () => {
           price: opt.price || ''
         })) || [],
         priority: tour.priority || '0',
-        isActive: tour.isActive
+        isActive: tour.isActive,
+        description: tour.description || '',
+        currency: tour.currency || 'EUR'
       };
       
       setTourData(editableTourData);
@@ -348,11 +363,20 @@ const Tours = () => {
       id: 'tourName',
       type: 'autocomplete',
       placeholder: 'Tur adı yazın veya seçin',
-      options: savedTours.map(tour => ({ 
-        value: tour.name, 
-        label: tour.name,
-        searchTerms: tour.name.toLowerCase()
-      }))
+      options: savedTours.flatMap(tour => [
+        {
+          value: tour.name,
+          label: `📁 ${tour.name}`,
+          searchTerms: tour.name.toLowerCase(),
+          isMainTour: true
+        },
+        ...(tour.subTours?.map(subTour => ({
+          value: subTour.name,
+          label: `  ↳ ${subTour.name}`,
+          searchTerms: `${tour.name} ${subTour.name}`.toLowerCase(),
+          mainTourName: tour.name
+        })) || [])
+      ])
     },
     {
       label: 'Operatör Seç',
@@ -410,13 +434,9 @@ const Tours = () => {
   }, [createdTours, searchQuery, showActive]);
 
   const handleStatusChange = (tourId) => {
-    console.log('Status değişikliği öncesi tour:', tourId);
-    console.log('Status değişikliği öncesi isActive:', tourId.isActive);
-    
     setCreatedTours(prev => prev.map(tour => {
       if (tour === tourId) {
         const updatedTour = { ...tour, isActive: !tour.isActive };
-        console.log('Güncellenmiş tour:', updatedTour);
         return updatedTour;
       }
       return tour;
@@ -428,9 +448,7 @@ const Tours = () => {
       const newTours = [...prev];
       const tour = { ...newTours[tourIndex] };
       
-      // Güvenlik kontrolleri ekleyelim
       if (!tour?.relatedData?.pickupTimes?.[pickupTimeIndex]) {
-        console.error('Pickup time not found:', { tourIndex, pickupTimeIndex });
         return prev;
       }
 
@@ -507,7 +525,7 @@ const Tours = () => {
       const existingToursResponse = await getAllTours(agencyUser.companyId);
       const existingTours = existingToursResponse.success ? existingToursResponse.data : [];
       
-      // Silinecek turları bul (veritabanında var ama state'de olmayan turlar)
+      // Silinecek turları bul
       const toursToDelete = existingTours
         .filter(existingTour => 
           !createdTours.some(stateTour => 
@@ -521,26 +539,59 @@ const Tours = () => {
         await deleteTour(tourId);
       }
 
-      // Kalan turları kaydet/güncelle
-      const toursToSave = createdTours.map(tour => ({
-        mainTour: {
-          company_ref: agencyUser.companyId,
-          tour_name: tour.tourName,
-          operator: tour.operator,
-          operator_id: tour.operatorId,
-          adult_price: tour.adultPrice,
-          child_price: tour.childPrice,
-          guide_adult_price: tour.guideAdultPrice,
-          guide_child_price: tour.guideChildPrice,
-          is_active: Boolean(tour.isActive),
-          bolge_id: tour.bolgeId || [],
-          bolgeler: tour.bolgeler || [],
-          priority: tour.priority || '0'
-        },
-        days: tour.relatedData.days,
-        pickupTimes: tour.relatedData.pickupTimes,
-        options: tour.relatedData.options
-      }));
+      // Debug için savedTours içeriğini kontrol et
+      console.log('Mevcut savedTours:', savedTours);
+
+      const toursToSave = createdTours.map(tour => {
+        const tourName = tour.tourName.trim();
+        let mainTourName = tourName;
+        
+        console.log('İşlenen tur:', {
+          tourName,
+          savedTours: savedTours.map(st => st.name),
+          hasSubTours: savedTours.some(st => st.subTours?.length > 0)
+        });
+
+        // Ana tur bulma mantığı
+        for (const savedTour of savedTours) {
+          if (savedTour.name === tourName) {
+            mainTourName = savedTour.name;
+            console.log(`Ana tur eşleşmesi bulundu: ${tourName}`);
+            break;
+          }
+          if (savedTour.subTours?.some(subTour => subTour.name === tourName)) {
+            mainTourName = savedTour.name;
+            console.log(`Alt tur için ana tur bulundu: ${tourName} -> ${savedTour.name}`);
+            break;
+          }
+        }
+
+        const tourData = {
+          mainTour: {
+            company_ref: agencyUser.companyId,
+            tour_name: tourName,
+            main_tour_name: mainTourName,
+            operator: tour.operator,
+            operator_id: tour.operatorId,
+            adult_price: tour.adultPrice,
+            child_price: tour.childPrice,
+            guide_adult_price: tour.guideAdultPrice,
+            guide_child_price: tour.guideChildPrice,
+            is_active: Boolean(tour.isActive),
+            bolge_id: tour.bolgeId || [],
+            bolgeler: tour.bolgeler || [],
+            priority: tour.priority || '0',
+            description: tour.description || '',
+            currency: tour.currency || 'EUR'
+          },
+          days: tour.relatedData.days,
+          pickupTimes: tour.relatedData.pickupTimes,
+          options: tour.relatedData.options
+        };
+
+        console.log('Kaydedilecek tur verisi:', tourData);
+        return tourData;
+      });
 
       const response = await saveAllTours(toursToSave);
       
@@ -560,6 +611,8 @@ const Tours = () => {
             isActive: tour.mainTour.is_active,
             priority: tour.mainTour.priority || '0',
             bolgeler: tour.mainTour.bolgeler || [],
+            description: tour.mainTour.description || '',
+            currency: tour.mainTour.currency || 'EUR',
             relatedData: {
               days: tour.days || [],
               pickupTimes: tour.pickupTimes || [],
@@ -573,7 +626,7 @@ const Tours = () => {
         alert('Kayıt sırasında bir hata oluştu: ' + response.message);
       }
     } catch (error) {
-      console.error('Kayıt hatası:', error);
+      // console.error('Kayıt hatası:', error);
       alert('Değişiklikler kaydedilirken bir hata oluştu. Lütfen tekrar deneyin.');
     }
   };

@@ -78,7 +78,7 @@ module.exports = (db) => {
       const settingsSql = `
         SELECT earnings, promotion_rate, revenue, 
                pax_adult, pax_child, pax_free
-        FROM agency_guide_settings 
+        FROM agency_guide_accounts 
         WHERE guide_id = ?
       `;
       
